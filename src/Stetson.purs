@@ -15,7 +15,7 @@ import Erl.Data.List (List, nil, reverse, singleton, (:))
 import Erl.Data.Tuple (Tuple2, Tuple4, tuple4)
 import Erl.ModuleName (NativeModuleName, nativeModuleName)
 import Foreign (unsafeToForeign)
-import ModuleNames as ModuleNames
+import Stetson.ModuleNames as ModuleNames
 import Unsafe.Coerce (unsafeCoerce)
 
 foreign import data HandlerArgs :: Type

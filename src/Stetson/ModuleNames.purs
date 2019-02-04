@@ -1,4 +1,4 @@
-module ModuleNames where
+module Stetson.ModuleNames where
 
 import Erl.ModuleName (ModuleName(..))
 
@@ -8,8 +8,5 @@ stetsonRest = ModuleName "Stetson.Rest"
 stetsonRestHandler :: ModuleName
 stetsonRestHandler = ModuleName "Stetson.RestHandler"
 
-stetson :: ModuleName
-stetson = ModuleName "Stetson"
-
-moduleNames :: ModuleName
-moduleNames = ModuleName "ModuleNames"
+stetsonModuleNames :: ModuleName
+stetsonModuleNames = ModuleName "Stetson.ModuleNames"
