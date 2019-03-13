@@ -6,12 +6,14 @@ import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Uncurried (EffectFn2, mkEffectFn2)
 import Erl.Atom (atom)
-import Erl.Cowboy.Handlers.Rest (AcceptCallback(..), AllowedMethodsHandler, ContentType(..), ContentTypesAcceptedHandler, ContentTypesProvidedHandler, InitHandler, ProvideCallback(..), ResourceExistsHandler, contentTypesAcceptedResult, contentTypesProvidedResult, initResult)
+import Erl.Cowboy.Handlers.Rest (AcceptCallback(..), AllowedMethodsHandler, ContentType(..), ContentTypesAcceptedHandler, ContentTypesProvidedHandler, InitHandler, IsAuthorizedHandler, ProvideCallback(..), ResourceExistsHandler, authorized, contentTypesAcceptedResult, contentTypesProvidedResult, initResult, unauthorized)
 import Erl.Cowboy.Handlers.Rest (RestResult, restResult) as Cowboy
 import Erl.Cowboy.Req (Req)
+import Erl.Data.Binary.UTF8 (UTF8String)
+import Erl.Data.Binary.UTF8 as UTF8String
 import Erl.Data.List (List, mapWithIndex, nil, (!!))
 import Erl.Data.Tuple (tuple2, uncurry2)
-import Stetson (InitResult(..), RestHandler, RestResult(..))
+import Stetson (InitResult(..), RestHandler, RestResult(..), Authorized(..))
 import Unsafe.Coerce (unsafeCoerce)
 
 type State state = 
@@ -33,6 +35,13 @@ resource_exists = mkEffectFn2 \req state@{ handler } -> do
 allowed_methods :: forall state. AllowedMethodsHandler (State state)
 allowed_methods = mkEffectFn2 \req state@{ handler, innerState } -> do
   callMap (map show) handler.allowedMethods req state
+
+is_authorized :: forall state. IsAuthorizedHandler (State state)
+is_authorized = mkEffectFn2 \req state@{ handler } -> do
+  callMap convertAuth handler.isAuthorized req state
+  where
+  convertAuth Authorized = authorized
+  convertAuth (NotAuthorized s) = unauthorized s
 
 -- { "application", "json", call_foo }
 -- { "application/json", call_foo }

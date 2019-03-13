@@ -43,9 +43,12 @@ type RestHandler state = {
   , resourceExists :: Maybe (Req -> state -> Effect (RestResult Boolean state))
   , contentTypesAccepted :: Maybe (Req -> state -> Effect (RestResult (List (Tuple2 String (AcceptHandler state))) state))
   , contentTypesProvided :: Maybe (Req -> state -> Effect (RestResult (List (Tuple2 String (ProvideHandler state))) state))
+  , isAuthorized :: Maybe (Req -> state -> Effect (RestResult Authorized state))
   }
 
 data HttpMethod = GET | POST | HEAD | OPTIONS | PUT | DELETE
+
+data Authorized = Authorized | NotAuthorized String
 
 instance showHttpMethod :: Show HttpMethod where
   show method = case method of
@@ -64,7 +67,7 @@ type StetsonRoute =
   { route :: String
   , moduleName :: NativeModuleName
   , args :: HandlerArgs
-}
+  }
 
 data ConfiguredRoute = Stetson StetsonRoute | Cowboy Path
 
@@ -90,7 +93,7 @@ route value (Rest handler) config@{ routes } =
                               , args: unsafeCoerce handler
                               } : routes) })
 
-static :: forall state. String -> StaticAssetLocation -> StetsonConfig -> StetsonConfig
+static :: String -> StaticAssetLocation -> StetsonConfig -> StetsonConfig
 static url (PrivDir app dir) config@{ routes } =
   (config { routes = Cowboy (Static.privDir (atom app) url dir) : routes })
 static url (PrivFile app file) config@{ routes } =
