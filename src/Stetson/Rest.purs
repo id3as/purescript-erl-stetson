@@ -7,7 +7,7 @@ import Effect (Effect)
 import Erl.Cowboy.Req (Req)
 import Erl.Data.List (List)
 import Erl.Data.Tuple (Tuple2)
-import Stetson (AcceptHandler, HttpMethod, InitHandler, InitResult(..), ProvideHandler, RestHandler, RestResult(..), StetsonHandler(..))
+import Stetson (AcceptHandler, Authorized, HttpMethod, InitHandler, InitResult(..), ProvideHandler, RestHandler, RestResult(..), StetsonHandler(..))
 
 handler :: forall state. InitHandler state -> RestHandler state
 handler init = {
@@ -16,6 +16,7 @@ handler init = {
   , resourceExists: Nothing
   , contentTypesAccepted: Nothing
   , contentTypesProvided: Nothing
+  , isAuthorized: Nothing
   }
 
 allowedMethods :: forall state. (Req -> state -> Effect (RestResult (List HttpMethod) state)) -> RestHandler state -> RestHandler state
@@ -23,6 +24,9 @@ allowedMethods fn handler = (handler { allowedMethods = Just fn })
 
 resourceExists :: forall state. (Req -> state -> Effect (RestResult Boolean state)) -> RestHandler state -> RestHandler state
 resourceExists fn handler = (handler { resourceExists = Just fn })
+
+isAuthorized :: forall state. (Req -> state -> Effect (RestResult Authorized state)) -> RestHandler state -> RestHandler state
+isAuthorized fn handler = (handler { isAuthorized = Just fn })
 
 contentTypesAccepted :: forall state. (Req -> state -> Effect (RestResult (List (Tuple2 String (AcceptHandler state))) state)) -> RestHandler state -> RestHandler state
 contentTypesAccepted fn handler = (handler { contentTypesAccepted = Just fn  })
