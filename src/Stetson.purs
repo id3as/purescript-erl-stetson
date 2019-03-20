@@ -3,7 +3,7 @@ module Stetson where
 import Prelude
 
 import Cowboy.Static as Static
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Erl.Atom (atom)
 import Erl.Cowboy (ProtoEnv(..), ProtoOpt(..), TransOpt(..), env, protocolOpts)
@@ -12,6 +12,7 @@ import Erl.Cowboy.Req (Req)
 import Erl.Cowboy.Routes (Path)
 import Erl.Cowboy.Routes as Routes
 import Erl.Data.List (List, nil, reverse, singleton, (:))
+import Erl.Data.List as List
 import Erl.Data.Tuple (Tuple2, Tuple4, tuple4)
 import Erl.ModuleName (NativeModuleName, nativeModuleName)
 import Foreign (unsafeToForeign)
@@ -73,16 +74,18 @@ data ConfiguredRoute = Stetson StetsonRoute | Cowboy Path
 
 -- Probably want to make this look a bit more like Cowboy's config internally
 -- Lists of maps or tuples or whatever the hell cowboy is using in whatever version we're bound to
-type StetsonConfig = {
-  bindPort :: Int
-, bindAddress :: Tuple4 Int Int Int Int
-, routes :: List ConfiguredRoute
+type StetsonConfig =
+  { bindPort :: Int
+  , bindAddress :: Tuple4 Int Int Int Int
+  , streamHandlers :: Maybe (List NativeModuleName)
+  , routes :: List ConfiguredRoute
   }
 
 configure :: StetsonConfig
 configure = 
   { bindPort : 8000
   , bindAddress : tuple4 0 0 0 0
+  , streamHandlers : Nothing
   , routes : nil
   }
 
@@ -111,12 +114,16 @@ bindTo :: Int -> Int -> Int -> Int -> StetsonConfig -> StetsonConfig
 bindTo t1 t2 t3 t4 config = 
   (config { bindAddress = tuple4 t1 t2 t3 t4 })
 
+streamHandlers :: List NativeModuleName -> StetsonConfig -> StetsonConfig
+streamHandlers handlers config =
+  (config { streamHandlers = Just handlers })
+
 startClear :: String -> StetsonConfig -> Effect Unit
-startClear name config@{ bindAddress, bindPort } = do
+startClear name config@{ bindAddress, bindPort, streamHandlers } = do
   let paths = createRoute <$> reverse config.routes
       dispatch = Routes.compile $ singleton $ Routes.anyHost paths
       transOpts = Ip bindAddress : Port bindPort : nil
-      protoOpts = protocolOpts $ Env (env (Dispatch dispatch : nil)) : nil
+      protoOpts = protocolOpts $ Env (env (Dispatch dispatch : nil)) : nil <> List.fromFoldable (StreamHandlers <$> streamHandlers)
   _ <- Cowboy.startClear (atom name) transOpts protoOpts
   -- info "Started HTTP listener on port ~p." $ bindPort : nil
   pure unit
