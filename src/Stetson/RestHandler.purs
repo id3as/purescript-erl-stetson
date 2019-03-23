@@ -6,13 +6,14 @@ import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Uncurried (EffectFn2, mkEffectFn2)
 import Erl.Atom (atom)
-import Erl.Cowboy.Handlers.Rest (AcceptCallback(..), AllowedMethodsHandler, ContentType(..), ContentTypesAcceptedHandler, ContentTypesProvidedHandler, InitHandler, IsAuthorizedHandler, ProvideCallback(..), ResourceExistsHandler, authorized, contentTypesAcceptedResult, contentTypesProvidedResult, initResult, unauthorized)
+import Erl.Cowboy.Handlers.Rest (AcceptCallback(..), AllowedMethodsHandler, ContentType(..), ContentTypesAcceptedHandler, ContentTypesProvidedHandler, InitHandler, IsAuthorizedHandler, MovedPermanentlyHandler, MovedTemporarilyHandler, ProvideCallback(..), ResourceExistsHandler, ServiceAvailableHandler, PreviouslyExistedHandler, authorized, contentTypesAcceptedResult, contentTypesProvidedResult, initResult, unauthorized)
 import Erl.Cowboy.Handlers.Rest (RestResult, restResult) as Cowboy
 import Erl.Cowboy.Req (Req)
 import Erl.Data.Binary.UTF8 (UTF8String)
 import Erl.Data.Binary.UTF8 as UTF8String
-import Erl.Data.List (List, mapWithIndex, nil, (!!))
+import Erl.Data.List (List, mapWithIndex, nil, (!!), (:))
 import Erl.Data.Tuple (tuple2, uncurry2)
+import Lager (info) as Lager
 import Stetson (InitResult(..), RestHandler, RestResult(..), Authorized(..))
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -35,6 +36,22 @@ resource_exists = mkEffectFn2 \req state@{ handler } -> do
 allowed_methods :: forall state. AllowedMethodsHandler (State state)
 allowed_methods = mkEffectFn2 \req state@{ handler, innerState } -> do
   callMap (map show) handler.allowedMethods req state
+
+previously_existed :: forall state. PreviouslyExistedHandler (State state)
+previously_existed = mkEffectFn2 \req state@{ handler, innerState } -> do
+  call handler.previouslyExisted req state
+  
+moved_permanently :: forall state. MovedPermanentlyHandler (State state)
+moved_permanently = mkEffectFn2 \req state@{ handler, innerState } -> do
+  call handler.movedPermanently req state
+
+moved_temporarily :: forall state. MovedTemporarilyHandler (State state)
+moved_temporarily = mkEffectFn2 \req state@{ handler, innerState } -> do
+  call handler.movedTemporarily req state
+
+service_available :: forall state. ServiceAvailableHandler (State state)
+service_available = mkEffectFn2 \req state@{ handler, innerState } -> do
+  call handler.serviceAvailable req state
 
 is_authorized :: forall state. IsAuthorizedHandler (State state)
 is_authorized = mkEffectFn2 \req state@{ handler } -> do

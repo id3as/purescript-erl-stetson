@@ -8,6 +8,7 @@ import Effect (Effect)
 import Erl.Atom (atom)
 import Erl.Cowboy (ProtoEnv(..), ProtoOpt(..), TransOpt(..), env, protocolOpts)
 import Erl.Cowboy as Cowboy
+import Erl.Cowboy.Handlers.Rest (MovedResult)
 import Erl.Cowboy.Req (Req)
 import Erl.Cowboy.Routes (Path)
 import Erl.Cowboy.Routes as Routes
@@ -45,6 +46,10 @@ type RestHandler state = {
   , contentTypesAccepted :: Maybe (Req -> state -> Effect (RestResult (List (Tuple2 String (AcceptHandler state))) state))
   , contentTypesProvided :: Maybe (Req -> state -> Effect (RestResult (List (Tuple2 String (ProvideHandler state))) state))
   , isAuthorized :: Maybe (Req -> state -> Effect (RestResult Authorized state))
+  , movedTemporarily :: Maybe (Req -> state -> Effect (RestResult MovedResult state))
+  , movedPermanently :: Maybe (Req -> state -> Effect (RestResult MovedResult state))
+  , serviceAvailable :: Maybe (Req -> state -> Effect (RestResult Boolean state))
+  , previouslyExisted :: Maybe (Req -> state -> Effect (RestResult Boolean state))
   }
 
 data HttpMethod = GET | POST | HEAD | OPTIONS | PUT | DELETE
