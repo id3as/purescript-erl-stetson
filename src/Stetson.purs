@@ -83,6 +83,7 @@ type StetsonConfig =
   { bindPort :: Int
   , bindAddress :: Tuple4 Int Int Int Int
   , streamHandlers :: Maybe (List NativeModuleName)
+  , middlewares :: Maybe (List NativeModuleName)
   , routes :: List ConfiguredRoute
   }
 
@@ -91,6 +92,7 @@ configure =
   { bindPort : 8000
   , bindAddress : tuple4 0 0 0 0
   , streamHandlers : Nothing
+  , middlewares : Nothing
   , routes : nil
   }
 
@@ -123,12 +125,19 @@ streamHandlers :: List NativeModuleName -> StetsonConfig -> StetsonConfig
 streamHandlers handlers config =
   (config { streamHandlers = Just handlers })
 
+middlewares :: List NativeModuleName -> StetsonConfig -> StetsonConfig
+middlewares mws config =
+  (config { middlewares = Just mws })
+
 startClear :: String -> StetsonConfig -> Effect Unit
-startClear name config@{ bindAddress, bindPort, streamHandlers } = do
+startClear name config@{ bindAddress, bindPort, streamHandlers, middlewares } = do
   let paths = createRoute <$> reverse config.routes
       dispatch = Routes.compile $ singleton $ Routes.anyHost paths
       transOpts = Ip bindAddress : Port bindPort : nil
-      protoOpts = protocolOpts $ Env (env (Dispatch dispatch : nil)) : nil <> List.fromFoldable (StreamHandlers <$> streamHandlers)
+      protoOpts = protocolOpts $ 
+        Env (env (Dispatch dispatch : nil)) : nil 
+        <> List.fromFoldable (StreamHandlers <$> streamHandlers)
+        <> List.fromFoldable (Middlewares <$> middlewares)
   _ <- Cowboy.startClear (atom name) transOpts protoOpts
   -- info "Started HTTP listener on port ~p." $ bindPort : nil
   pure unit
