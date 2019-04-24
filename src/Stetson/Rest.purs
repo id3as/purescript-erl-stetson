@@ -17,6 +17,7 @@ handler init = {
   , resourceExists: Nothing
   , contentTypesAccepted: Nothing
   , contentTypesProvided: Nothing
+  , deleteResource: Nothing
   , isAuthorized: Nothing
   , movedTemporarily: Nothing
   , movedPermanently: Nothing
@@ -38,6 +39,9 @@ contentTypesAccepted fn handler = (handler { contentTypesAccepted = Just fn  })
 
 contentTypesProvided :: forall state. (Req -> state -> Effect (RestResult (List (Tuple2 String (ProvideHandler state))) state)) -> RestHandler state -> RestHandler state
 contentTypesProvided fn handler = (handler { contentTypesProvided = Just fn  })
+
+deleteResource :: forall state. (Req -> state -> Effect (RestResult Boolean state)) -> RestHandler state -> RestHandler state
+deleteResource fn handler = (handler { deleteResource = Just fn })
 
 movedTemporarily :: forall state. (Req -> state -> Effect (RestResult MovedResult state)) -> RestHandler state -> RestHandler state
 movedTemporarily fn handler = (handler { movedTemporarily = Just fn })

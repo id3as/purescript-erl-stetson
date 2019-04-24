@@ -45,6 +45,7 @@ type RestHandler state = {
   , resourceExists :: Maybe (Req -> state -> Effect (RestResult Boolean state))
   , contentTypesAccepted :: Maybe (Req -> state -> Effect (RestResult (List (Tuple2 String (AcceptHandler state))) state))
   , contentTypesProvided :: Maybe (Req -> state -> Effect (RestResult (List (Tuple2 String (ProvideHandler state))) state))
+  , deleteResource :: Maybe (Req -> state -> Effect (RestResult Boolean state))
   , isAuthorized :: Maybe (Req -> state -> Effect (RestResult Authorized state))
   , movedTemporarily :: Maybe (Req -> state -> Effect (RestResult MovedResult state))
   , movedPermanently :: Maybe (Req -> state -> Effect (RestResult MovedResult state))

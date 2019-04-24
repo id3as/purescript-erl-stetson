@@ -6,14 +6,11 @@ import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Uncurried (EffectFn2, mkEffectFn2)
 import Erl.Atom (atom)
-import Erl.Cowboy.Handlers.Rest (AcceptCallback(..), AllowedMethodsHandler, ContentType(..), ContentTypesAcceptedHandler, ContentTypesProvidedHandler, InitHandler, IsAuthorizedHandler, MovedPermanentlyHandler, MovedTemporarilyHandler, ProvideCallback(..), ResourceExistsHandler, ServiceAvailableHandler, PreviouslyExistedHandler, authorized, contentTypesAcceptedResult, contentTypesProvidedResult, initResult, unauthorized)
+import Erl.Cowboy.Handlers.Rest (AcceptCallback(..), AllowedMethodsHandler, ContentType(..), ContentTypesAcceptedHandler, ContentTypesProvidedHandler, InitHandler, IsAuthorizedHandler, MovedPermanentlyHandler, MovedTemporarilyHandler, PreviouslyExistedHandler, ProvideCallback(..), ResourceExistsHandler, ServiceAvailableHandler, DeleteResourceHandler, authorized, contentTypesAcceptedResult, contentTypesProvidedResult, initResult, unauthorized)
 import Erl.Cowboy.Handlers.Rest (RestResult, restResult) as Cowboy
 import Erl.Cowboy.Req (Req)
-import Erl.Data.Binary.UTF8 (UTF8String)
-import Erl.Data.Binary.UTF8 as UTF8String
-import Erl.Data.List (List, mapWithIndex, nil, (!!), (:))
+import Erl.Data.List (List, mapWithIndex, nil, (!!))
 import Erl.Data.Tuple (tuple2, uncurry2)
-import Lager (info) as Lager
 import Stetson (InitResult(..), RestHandler, RestResult(..), Authorized(..))
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -59,6 +56,10 @@ is_authorized = mkEffectFn2 \req state@{ handler } -> do
   where
   convertAuth Authorized = authorized
   convertAuth (NotAuthorized s) = unauthorized s
+
+delete_resource :: forall state. DeleteResourceHandler (State state)
+delete_resource = mkEffectFn2 \req state@{ handler } -> do
+  call handler.deleteResource req state
 
 -- { "application", "json", call_foo }
 -- { "application/json", call_foo }
