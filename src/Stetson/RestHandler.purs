@@ -6,7 +6,7 @@ import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Uncurried (EffectFn2, mkEffectFn2)
 import Erl.Atom (atom)
-import Erl.Cowboy.Handlers.Rest (AcceptCallback(..), AllowedMethodsHandler, ContentType(..), ContentTypesAcceptedHandler, ContentTypesProvidedHandler, InitHandler, IsAuthorizedHandler, MovedPermanentlyHandler, MovedTemporarilyHandler, PreviouslyExistedHandler, ProvideCallback(..), ResourceExistsHandler, ServiceAvailableHandler, DeleteResourceHandler, authorized, contentTypesAcceptedResult, contentTypesProvidedResult, initResult, unauthorized)
+import Erl.Cowboy.Handlers.Rest (AcceptCallback(..), AllowedMethodsHandler, ContentType(..), ContentTypesAcceptedHandler, ContentTypesProvidedHandler, DeleteResourceHandler, InitHandler, IsAuthorizedHandler, MovedPermanentlyHandler, MovedTemporarilyHandler, PreviouslyExistedHandler, ProvideCallback(..), ResourceExistsHandler, ServiceAvailableHandler, ForbiddenHandler, authorized, contentTypesAcceptedResult, contentTypesProvidedResult, initResult, unauthorized)
 import Erl.Cowboy.Handlers.Rest (RestResult, restResult) as Cowboy
 import Erl.Cowboy.Req (Req)
 import Erl.Data.List (List, mapWithIndex, nil, (!!))
@@ -56,6 +56,10 @@ is_authorized = mkEffectFn2 \req state@{ handler } -> do
   where
   convertAuth Authorized = authorized
   convertAuth (NotAuthorized s) = unauthorized s
+
+forbidden :: forall state. ForbiddenHandler (State state)
+forbidden = mkEffectFn2 \req state@{ handler } ->
+  call handler.forbidden req state
 
 delete_resource :: forall state. DeleteResourceHandler (State state)
 delete_resource = mkEffectFn2 \req state@{ handler } -> do

@@ -23,6 +23,7 @@ handler init = {
   , movedPermanently: Nothing
   , serviceAvailable: Nothing
   , previouslyExisted: Nothing
+  , forbidden: Nothing
   }
 
 allowedMethods :: forall state. (Req -> state -> Effect (RestResult (List HttpMethod) state)) -> RestHandler state -> RestHandler state
@@ -54,6 +55,9 @@ serviceAvailable fn handler = (handler { serviceAvailable = Just fn })
 
 previouslyExisted :: forall state. (Req -> state -> Effect (RestResult Boolean state)) -> RestHandler state -> RestHandler state
 previouslyExisted fn handler = (handler { previouslyExisted = Just fn })
+
+forbidden :: forall state. (Req -> state -> Effect (RestResult Boolean state)) -> RestHandler state -> RestHandler state
+forbidden fn handler = (handler { forbidden = Just fn })
 
 initResult :: forall state. Req -> state -> Effect (InitResult state)
 initResult rq st = pure $ InitOk rq st

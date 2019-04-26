@@ -51,6 +51,7 @@ type RestHandler state = {
   , movedPermanently :: Maybe (Req -> state -> Effect (RestResult MovedResult state))
   , serviceAvailable :: Maybe (Req -> state -> Effect (RestResult Boolean state))
   , previouslyExisted :: Maybe (Req -> state -> Effect (RestResult Boolean state))
+  , forbidden :: Maybe (Req -> state -> Effect (RestResult Boolean state))
   }
 
 data HttpMethod = GET | POST | HEAD | OPTIONS | PUT | DELETE
