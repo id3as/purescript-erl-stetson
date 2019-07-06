@@ -122,6 +122,6 @@ Create an rest response for return from a rest callback
 yeeha :: forall state. RestHandler state -> StetsonHandler state
 ```
 
-Finish defining this rest handler, yeehaaw
+Finish defining this rest handler_, yeehaaw
 
 

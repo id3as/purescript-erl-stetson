@@ -185,21 +185,21 @@ middlewares mws config =
 
 -- | Start the listener with the specified name
 startClear :: String -> StetsonConfig -> Effect Unit
-startClear name config@{ bindAddress, bindPort, streamHandlers, middlewares } = do
+startClear name config@{ bindAddress, bindPort, streamHandlers: streamHandlers_, middlewares: middlewares_ } = do
   let paths = createRoute <$> reverse config.routes
       dispatch = Routes.compile $ singleton $ Routes.anyHost paths
       transOpts = Ip bindAddress : Port bindPort : nil
       protoOpts = protocolOpts $ 
         Env (env (Dispatch dispatch : nil)) : nil 
-        <> List.fromFoldable (StreamHandlers <$> streamHandlers)
-        <> List.fromFoldable (Middlewares <$> middlewares)
+        <> List.fromFoldable (StreamHandlers <$> streamHandlers_)
+        <> List.fromFoldable (Middlewares <$> middlewares_)
   _ <- Cowboy.startClear (atom name) transOpts protoOpts
   pure unit
 
 
 createRoute :: ConfiguredRoute -> Path
-createRoute (Stetson { route, moduleName, args }) =
-  Routes.path route moduleName (Routes.InitialState $ unsafeToForeign args)
+createRoute (Stetson { route: route_, moduleName, args }) =
+  Routes.path route_ moduleName (Routes.InitialState $ unsafeToForeign args)
 
 createRoute (Cowboy path) = path
 

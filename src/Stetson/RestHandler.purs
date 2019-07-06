@@ -111,6 +111,7 @@ restResult outerState (Just result) = do
 -- The function is entirely ignored and is therefore treated as optional
 restResult outerState Nothing = noCall
 
+noCall :: forall t3 t4. Applicative t3 => t3 t4
 noCall = pure $ unsafeCoerce (atom "no_call") 
 
 accept :: forall state. Int -> EffectFn2 Req (State state) (Cowboy.RestResult Boolean (State state))
@@ -122,19 +123,45 @@ provide i = mkEffectFn2 \req state@{ provideHandlers } ->
   call (provideHandlers !! i) req state
 
 
+accept_0 :: forall state. EffectFn2 Req (State state) (Cowboy.RestResult Boolean (State state))
 accept_0 = accept 0
+
+accept_1 :: forall state. EffectFn2 Req (State state) (Cowboy.RestResult Boolean (State state))
 accept_1 = accept 1
+
+accept_2 :: forall state. EffectFn2 Req (State state) (Cowboy.RestResult Boolean (State state))
 accept_2 = accept 2
+
+accept_3 :: forall state. EffectFn2 Req (State state) (Cowboy.RestResult Boolean (State state))
 accept_3 = accept 3
+
+accept_4 :: forall state. EffectFn2 Req (State state) (Cowboy.RestResult Boolean (State state))
 accept_4 = accept 4
+
+accept_5 :: forall state. EffectFn2 Req (State state) (Cowboy.RestResult Boolean (State state))
 accept_5 = accept 5
+
+accept_6 :: forall state. EffectFn2 Req (State state) (Cowboy.RestResult Boolean (State state))
 accept_6 = accept 6
 
+provide_0 :: forall state. EffectFn2 Req (State state) (Cowboy.RestResult String (State state))
 provide_0 = provide 0
+
+provide_1 :: forall state. EffectFn2 Req (State state) (Cowboy.RestResult String (State state))
 provide_1 = provide 1
+
+provide_2 :: forall state. EffectFn2 Req (State state) (Cowboy.RestResult String (State state))
 provide_2 = provide 2
+
+provide_3 :: forall state. EffectFn2 Req (State state) (Cowboy.RestResult String (State state))
 provide_3 = provide 3
+
+provide_4 :: forall state. EffectFn2 Req (State state) (Cowboy.RestResult String (State state))
 provide_4 = provide 4
+  
+provide_5 :: forall state. EffectFn2 Req (State state) (Cowboy.RestResult String (State state))
 provide_5 = provide 5
+
+provide_6 :: forall state. EffectFn2 Req (State state) (Cowboy.RestResult String (State state))
 provide_6 = provide 6
 

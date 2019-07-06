@@ -48,47 +48,47 @@ handler init = {
 
 -- | Add an allowedMethods callback to the provided RestHandler
 allowedMethods :: forall state. (Req -> state -> Effect (RestResult (List HttpMethod) state)) -> RestHandler state -> RestHandler state
-allowedMethods fn handler = (handler { allowedMethods = Just fn })
+allowedMethods fn handler_ = (handler_ { allowedMethods = Just fn })
 
 -- | Add a resourceExists callback to the provided RestHandler
 resourceExists :: forall state. (Req -> state -> Effect (RestResult Boolean state)) -> RestHandler state -> RestHandler state
-resourceExists fn handler = (handler { resourceExists = Just fn })
+resourceExists fn handler_ = (handler_ { resourceExists = Just fn })
 
 -- | Add an isAuthorized callback to the provided RestHandler
 isAuthorized :: forall state. (Req -> state -> Effect (RestResult Authorized state)) -> RestHandler state -> RestHandler state
-isAuthorized fn handler = (handler { isAuthorized = Just fn })
+isAuthorized fn handler_ = (handler_ { isAuthorized = Just fn })
 
 -- | Add a contentTypesAccepted callback to the provided RestHandler
 contentTypesAccepted :: forall state. (Req -> state -> Effect (RestResult (List (Tuple2 String (AcceptHandler state))) state)) -> RestHandler state -> RestHandler state
-contentTypesAccepted fn handler = (handler { contentTypesAccepted = Just fn  })
+contentTypesAccepted fn handler_ = (handler_ { contentTypesAccepted = Just fn  })
 
 -- | Add a contentTypesProvided callback to the provided RestHandler
 contentTypesProvided :: forall state. (Req -> state -> Effect (RestResult (List (Tuple2 String (ProvideHandler state))) state)) -> RestHandler state -> RestHandler state
-contentTypesProvided fn handler = (handler { contentTypesProvided = Just fn  })
+contentTypesProvided fn handler_ = (handler_ { contentTypesProvided = Just fn  })
 
 -- | Add a deleteResource callback to the provided RestHandler
 deleteResource :: forall state. (Req -> state -> Effect (RestResult Boolean state)) -> RestHandler state -> RestHandler state
-deleteResource fn handler = (handler { deleteResource = Just fn })
+deleteResource fn handler_ = (handler_ { deleteResource = Just fn })
 
 -- | Add a movedTemporarily callback to the provided RestHandler
 movedTemporarily :: forall state. (Req -> state -> Effect (RestResult MovedResult state)) -> RestHandler state -> RestHandler state
-movedTemporarily fn handler = (handler { movedTemporarily = Just fn })
+movedTemporarily fn handler_ = (handler_ { movedTemporarily = Just fn })
 
 -- | Add a movedPermanently callback to the provided RestHandler
 movedPermanently :: forall state. (Req -> state -> Effect (RestResult MovedResult state)) -> RestHandler state -> RestHandler state
-movedPermanently fn handler = (handler { movedPermanently = Just fn })
+movedPermanently fn handler_ = (handler_ { movedPermanently = Just fn })
 
 -- | Add a serviceAvailable callback to the provided RestHandler
 serviceAvailable :: forall state. (Req -> state -> Effect (RestResult Boolean state)) -> RestHandler state -> RestHandler state
-serviceAvailable fn handler = (handler { serviceAvailable = Just fn })
+serviceAvailable fn handler_ = (handler_ { serviceAvailable = Just fn })
 
 -- | Add a previouslyExisted callback to the provided RestHandler
 previouslyExisted :: forall state. (Req -> state -> Effect (RestResult Boolean state)) -> RestHandler state -> RestHandler state
-previouslyExisted fn handler = (handler { previouslyExisted = Just fn })
+previouslyExisted fn handler_ = (handler_ { previouslyExisted = Just fn })
 
 -- | Add a forbidden callback to the provided RestHandler
 forbidden :: forall state. (Req -> state -> Effect (RestResult Boolean state)) -> RestHandler state -> RestHandler state
-forbidden fn handler = (handler { forbidden = Just fn })
+forbidden fn handler_ = (handler_ { forbidden = Just fn })
 
 -- | Create an init response for return from an InitHandler
 initResult :: forall state. Req -> state -> Effect (InitResult state)
@@ -98,6 +98,6 @@ initResult rq st = pure $ InitOk rq st
 result :: forall reply state. reply -> Req -> state -> Effect (RestResult reply state)
 result re rq st = pure $ RestOk re rq st
 
--- | Finish defining this rest handler, yeehaaw
+-- | Finish defining this rest handler_, yeehaaw
 yeeha :: forall state. RestHandler state -> StetsonHandler state
 yeeha = Rest
