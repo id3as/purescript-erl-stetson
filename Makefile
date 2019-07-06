@@ -8,12 +8,19 @@ PS_ERL_FFI = $(shell find ${PS_SRC} -type f -name \*.erl)
 PACKAGE_SET = $(shell jq '.set' < psc-package.json)
 ERL_MODULES_VERSION = $(shell jq '."erl-modules".version' < .psc-package/$(PACKAGE_SET)/.set/packages.json)
 
-all: output
+all: output docs
 
 output: $(PS_SOURCEFILES) $(PS_ERL_FFI) .psc-package
 	.psc-package/${PACKAGE_SET}/erl-modules/${ERL_MODULES_VERSION}/scripts/gen_module_names.sh src/Stetson Stetson.ModuleNames
 	psc-package sources | xargs purs compile '$(PS_SRC)/**/*.purs'
 	@touch output
+
+docs: $(PS_SOURCEFILES) $(PS_ERL_FFI) .psc-package
+	mkdir -p docs
+	psc-package sources | xargs purs docs '$(PS_SRC)/**/*.purs' \
+		--docgen Stetson:docs/Stetson.md \
+		--docgen Stetson.Rest:docs/Stetson.Rest.md 
+	touch docs
 
 .psc-package: psc-package.json
 	psc-package install
