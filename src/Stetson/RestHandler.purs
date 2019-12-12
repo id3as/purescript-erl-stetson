@@ -6,7 +6,7 @@ import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Uncurried (EffectFn2, mkEffectFn2)
 import Erl.Atom (atom)
-import Erl.Cowboy.Handlers.Rest (AcceptCallback(..), AllowedMethodsHandler, ContentType(..), ContentTypesAcceptedHandler, ContentTypesProvidedHandler, DeleteResourceHandler, InitHandler, IsAuthorizedHandler, MovedPermanentlyHandler, MovedTemporarilyHandler, PreviouslyExistedHandler, ProvideCallback(..), ResourceExistsHandler, ServiceAvailableHandler, ForbiddenHandler, authorized, contentTypesAcceptedResult, contentTypesProvidedResult, initResult, unauthorized)
+import Erl.Cowboy.Handlers.Rest (AcceptCallback(..), AllowedMethodsHandler, ContentType(..), ContentTypesAcceptedHandler, ContentTypesProvidedHandler, DeleteResourceHandler, ForbiddenHandler, InitHandler, IsAuthorizedHandler, IsConflictHandler, MovedPermanentlyHandler, MovedTemporarilyHandler, PreviouslyExistedHandler, ProvideCallback(..), ResourceExistsHandler, ServiceAvailableHandler, authorized, contentTypesAcceptedResult, contentTypesProvidedResult, initResult, unauthorized)
 import Erl.Cowboy.Handlers.Rest (RestResult, restResult) as Cowboy
 import Erl.Cowboy.Req (Req)
 import Erl.Data.List (List, mapWithIndex, nil, (!!))
@@ -14,7 +14,7 @@ import Erl.Data.Tuple (tuple2, uncurry2)
 import Stetson (InitResult(..), RestHandler, RestResult(..), Authorized(..))
 import Unsafe.Coerce (unsafeCoerce)
 
-type State state = 
+type State state =
   { handler :: RestHandler state
   , innerState :: state
   , acceptHandlers :: List (Req -> state -> Effect (RestResult Boolean state))
@@ -37,7 +37,7 @@ allowed_methods = mkEffectFn2 \req state@{ handler, innerState } -> do
 previously_existed :: forall state. PreviouslyExistedHandler (State state)
 previously_existed = mkEffectFn2 \req state@{ handler, innerState } -> do
   call handler.previouslyExisted req state
-  
+
 moved_permanently :: forall state. MovedPermanentlyHandler (State state)
 moved_permanently = mkEffectFn2 \req state@{ handler, innerState } -> do
   call handler.movedPermanently req state
@@ -56,6 +56,10 @@ is_authorized = mkEffectFn2 \req state@{ handler } -> do
   where
   convertAuth Authorized = authorized
   convertAuth (NotAuthorized s) = unauthorized s
+
+is_conflict :: forall state. IsConflictHandler (State state)
+is_conflict = mkEffectFn2 \req state@{ handler } ->
+  call handler.isConflict req state
 
 forbidden :: forall state. ForbiddenHandler (State state)
 forbidden = mkEffectFn2 \req state@{ handler } ->
@@ -107,12 +111,12 @@ restResult outerState (Just result) = do
   pure $ Cowboy.restResult re (outerState { innerState = st }) rq
 
 -- This is an internal Cowboy detail, and we *must not* use the value from this once we've returned it
--- Cowboy may not support this in the future, but hopefully it will - essentially it means that 
+-- Cowboy may not support this in the future, but hopefully it will - essentially it means that
 -- The function is entirely ignored and is therefore treated as optional
 restResult outerState Nothing = noCall
 
 noCall :: forall t3 t4. Applicative t3 => t3 t4
-noCall = pure $ unsafeCoerce (atom "no_call") 
+noCall = pure $ unsafeCoerce (atom "no_call")
 
 accept :: forall state. Int -> EffectFn2 Req (State state) (Cowboy.RestResult Boolean (State state))
 accept i = mkEffectFn2 \req state@{ acceptHandlers } ->
@@ -158,10 +162,9 @@ provide_3 = provide 3
 
 provide_4 :: forall state. EffectFn2 Req (State state) (Cowboy.RestResult String (State state))
 provide_4 = provide 4
-  
+
 provide_5 :: forall state. EffectFn2 Req (State state) (Cowboy.RestResult String (State state))
 provide_5 = provide 5
 
 provide_6 :: forall state. EffectFn2 Req (State state) (Cowboy.RestResult String (State state))
 provide_6 = provide 6
-
