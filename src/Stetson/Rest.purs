@@ -5,6 +5,7 @@ module Stetson.Rest ( handler
                     , allowedMethods
                     , resourceExists
                     , isAuthorized
+                    , isConflict
                     , contentTypesAccepted
                     , contentTypesProvided
                     , deleteResource
@@ -39,6 +40,7 @@ handler init = {
   , contentTypesProvided: Nothing
   , deleteResource: Nothing
   , isAuthorized: Nothing
+  , isConflict: Nothing
   , movedTemporarily: Nothing
   , movedPermanently: Nothing
   , serviceAvailable: Nothing
@@ -57,6 +59,11 @@ resourceExists fn handler_ = (handler_ { resourceExists = Just fn })
 -- | Add an isAuthorized callback to the provided RestHandler
 isAuthorized :: forall state. (Req -> state -> Effect (RestResult Authorized state)) -> RestHandler state -> RestHandler state
 isAuthorized fn handler_ = (handler_ { isAuthorized = Just fn })
+
+
+-- | Add an isConflict callback to the provided RestHandler
+isConflict :: forall state. (Req -> state -> Effect (RestResult Boolean state)) -> RestHandler state -> RestHandler state
+isConflict fn handler_ = (handler_ { isConflict = Just fn })
 
 -- | Add a contentTypesAccepted callback to the provided RestHandler
 contentTypesAccepted :: forall state. (Req -> state -> Effect (RestResult (List (Tuple2 String (AcceptHandler state))) state)) -> RestHandler state -> RestHandler state

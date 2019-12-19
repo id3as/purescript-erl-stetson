@@ -75,6 +75,7 @@ type RestHandler state = {
   , serviceAvailable :: Maybe (Req -> state -> Effect (RestResult Boolean state))
   , previouslyExisted :: Maybe (Req -> state -> Effect (RestResult Boolean state))
   , forbidden :: Maybe (Req -> state -> Effect (RestResult Boolean state))
+  , isConflict :: Maybe (Req -> state -> Effect (RestResult Boolean state))
   }
 
 -- | or is it a verb

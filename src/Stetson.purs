@@ -31,10 +31,9 @@ import Foreign (unsafeToForeign)
 import Stetson.ModuleNames as ModuleNames
 import Unsafe.Coerce (unsafeCoerce)
 
-
 -- | Creates a blank stetson config with default settings and no routes
 configure :: StetsonConfig
-configure = 
+configure =
   { bindPort : 8000
   , bindAddress : tuple4 0 0 0 0
   , streamHandlers : Nothing
@@ -72,17 +71,17 @@ static url (PrivFile app file) config@{ routes } =
 
 -- | Introduce a list of native Erlang cowboy handlers to this config
 cowboyRoutes :: List Path -> StetsonConfig -> StetsonConfig
-cowboyRoutes newRoutes config@{ routes } = 
+cowboyRoutes newRoutes config@{ routes } =
   (config { routes = (Cowboy <$> reverse newRoutes) <> routes })
 
 -- | Set the port that this http listener will listen to
 port :: Int -> StetsonConfig -> StetsonConfig
-port value config = 
+port value config =
   (config { bindPort = value })
 
 -- | Set the IP that this http listener will bind to (default: 0.0.0.0)
 bindTo :: Int -> Int -> Int -> Int -> StetsonConfig -> StetsonConfig
-bindTo t1 t2 t3 t4 config = 
+bindTo t1 t2 t3 t4 config =
   (config { bindAddress = tuple4 t1 t2 t3 t4 })
 
 -- | Supply a list of modules to act as native stream handlers in cowboy
@@ -101,8 +100,8 @@ startClear name config@{ bindAddress, bindPort, streamHandlers: streamHandlers_,
   let paths = createRoute <$> reverse config.routes
       dispatch = Routes.compile $ singleton $ Routes.anyHost paths
       transOpts = Ip bindAddress : Port bindPort : nil
-      protoOpts = protocolOpts $ 
-        Env (env (Dispatch dispatch : nil)) : nil 
+      protoOpts = protocolOpts $
+        Env (env (Dispatch dispatch : nil)) : nil
         <> List.fromFoldable (StreamHandlers <$> streamHandlers_)
         <> List.fromFoldable (Middlewares <$> middlewares_)
   _ <- Cowboy.startClear (atom name) transOpts protoOpts
@@ -114,5 +113,3 @@ createRoute (Stetson { route: route_, moduleName, args }) =
   Routes.path route_ moduleName (Routes.InitialState $ unsafeToForeign args)
 
 createRoute (Cowboy path) = path
-
-
