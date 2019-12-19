@@ -1,20 +1,6 @@
 -- | This is the entry point into the Stetson wrapper
 -- | You'll want to call Stetson.configure and then follow the types..
-module Stetson ( RestResult(..)
-               , InitResult(..)
-               , InitHandler
-               , AcceptHandler
-               , ProvideHandler
-               , RestHandler
-               , HttpMethod(..)
-               , Authorized(..)
-               , StetsonHandler(..)
-               , StaticAssetLocation(..)
-               , StetsonRoute
-               , HandlerArgs
-               , ConfiguredRoute(..)
-               , StetsonConfig
-               , configure
+module Stetson ( configure
                , route
                , static
                , cowboyRoutes
@@ -23,9 +9,11 @@ module Stetson ( RestResult(..)
                , streamHandlers
                , middlewares
                , startClear
+               , module Stetson.Types
   ) where
 
-import Prelude
+import Prelude 
+import Stetson.Types (AcceptHandler, Authorized(..), ConfiguredRoute(..), HandlerArgs, HttpMethod(..), InitHandler, InitResult(..), InnerStetsonHandler(..), ProvideHandler, ReceivingStetsonHandler, RestHandler, RestResult(..), StaticAssetLocation(..), StetsonConfig, StetsonHandler, StetsonRoute, WebSocketCallResult(..), WebSocketHandleHandler, WebSocketHandler, WebSocketInfoHandler, WebSocketInitHandler, WebSocketMessageRouter)
 
 import Cowboy.Static as Static
 import Data.Maybe (Maybe(..))
@@ -33,98 +21,16 @@ import Effect (Effect)
 import Erl.Atom (atom)
 import Erl.Cowboy (ProtoEnv(..), ProtoOpt(..), TransOpt(..), env, protocolOpts)
 import Erl.Cowboy as Cowboy
-import Erl.Cowboy.Handlers.Rest (MovedResult)
-import Erl.Cowboy.Req (Req)
 import Erl.Cowboy.Routes (Path)
 import Erl.Cowboy.Routes as Routes
 import Erl.Data.List (List, nil, reverse, singleton, (:))
 import Erl.Data.List as List
-import Erl.Data.Tuple (Tuple2, Tuple4, tuple4)
+import Erl.Data.Tuple (tuple4)
 import Erl.ModuleName (NativeModuleName, nativeModuleName)
 import Foreign (unsafeToForeign)
 import Stetson.ModuleNames as ModuleNames
 import Unsafe.Coerce (unsafeCoerce)
 
-foreign import data HandlerArgs :: Type
-
--- Thoughts here are to mirror the cowboy API as much as possible whilst
---   - not tying ourselves to it in application code
---   - providing more idiomatic types for composition/etc
--- It's a bit of a faff, but it means if Cowboy decide to get rid of the undocumented behaviour we're abusing
--- We can switch away from the underlying engine, write our own or use cowlib directly (or just re-write Cowboy in Purescript)
--- There are a lot of reasons why we would want a properly idiomatic http server in PS, but hopefully somebody will do that for us and replace the need  for this entirely
--- Now there's a fun job for a long weekend
--- The exception is cowboy_req, as that's pretty universal across handlers and isn't too ridiculous to talk to directly
--- We could go with our own req module, but that would probably just end up being 1:1 to cowboy req anyway so who needs that extra work
-
-
--- | The return type of most of the callbacks invoked as part of the REST workflow
-data RestResult reply state = RestOk reply Req state
-
--- | The return type of the 'init' callback in the REST workflow
-data InitResult state = InitOk Req state
-
--- | The callback invoked to kick off the REST workflow
-type InitHandler state = Req -> Effect (InitResult state)
-
--- | A callback invoked to 'accept' a specific content type
-type AcceptHandler state = Req -> state -> Effect (RestResult Boolean state)
-
--- | A callback invoked to 'provide' a specific content type
-type ProvideHandler state = Req -> state -> Effect (RestResult String state)
-
--- | A builder containing the complete set of callbacks during the rest workflow for a specific handler
-type RestHandler state = {
-    init :: Req -> Effect (InitResult state)
-  , allowedMethods :: Maybe (Req -> state -> Effect (RestResult (List HttpMethod) state))
-  , resourceExists :: Maybe (Req -> state -> Effect (RestResult Boolean state))
-  , contentTypesAccepted :: Maybe (Req -> state -> Effect (RestResult (List (Tuple2 String (AcceptHandler state))) state))
-  , contentTypesProvided :: Maybe (Req -> state -> Effect (RestResult (List (Tuple2 String (ProvideHandler state))) state))
-  , deleteResource :: Maybe (Req -> state -> Effect (RestResult Boolean state))
-  , isAuthorized :: Maybe (Req -> state -> Effect (RestResult Authorized state))
-  , movedTemporarily :: Maybe (Req -> state -> Effect (RestResult MovedResult state))
-  , movedPermanently :: Maybe (Req -> state -> Effect (RestResult MovedResult state))
-  , serviceAvailable :: Maybe (Req -> state -> Effect (RestResult Boolean state))
-  , previouslyExisted :: Maybe (Req -> state -> Effect (RestResult Boolean state))
-  , forbidden :: Maybe (Req -> state -> Effect (RestResult Boolean state))
-  }
-
--- | or is it a verb
-data HttpMethod = GET | POST | HEAD | OPTIONS | PUT | DELETE
-
--- | Return type of the isAuthorized callback
-data Authorized = Authorized | NotAuthorized String
-
-instance showHttpMethod :: Show HttpMethod where
-  show method = case method of
-                     GET -> "GET"
-                     POST -> "POST"
-                     HEAD -> "HEAD"
-                     OPTIONS -> "OPTIONS"
-                     PUT -> "PUT"
-                     DELETE -> "DELETE"
-
-data StetsonHandler state = Rest (RestHandler state)
-data StaticAssetLocation = PrivDir String String
-                         | PrivFile String String
-
-type StetsonRoute = 
-  { route :: String
-  , moduleName :: NativeModuleName
-  , args :: HandlerArgs
-  }
-
-data ConfiguredRoute = Stetson StetsonRoute | Cowboy Path
-
--- Probably want to make this look a bit more like Cowboy's config internally
--- Lists of maps or tuples or whatever the hell cowboy is using in whatever version we're bound to
-type StetsonConfig =
-  { bindPort :: Int
-  , bindAddress :: Tuple4 Int Int Int Int
-  , streamHandlers :: Maybe (List NativeModuleName)
-  , middlewares :: Maybe (List NativeModuleName)
-  , routes :: List ConfiguredRoute
-  }
 
 -- | Creates a blank stetson config with default settings and no routes
 configure :: StetsonConfig
@@ -143,10 +49,16 @@ configure =
 -- | ```purescript
 -- | let newConfig = Stetson.route "/items/:id" myHandler config
 -- | ```
-route :: forall state. String -> StetsonHandler state -> StetsonConfig -> StetsonConfig
+route :: forall msg state. String -> InnerStetsonHandler msg state -> StetsonConfig -> StetsonConfig
 route value (Rest handler) config@{ routes } =
   (config { routes = (Stetson { route: value
                               , moduleName: (nativeModuleName ModuleNames.stetsonRestHandler)
+                              , args: unsafeCoerce handler
+                              } : routes) })
+
+route value (WebSocket handler) config@{ routes } =
+  (config { routes = (Stetson { route: value
+                              , moduleName: (nativeModuleName ModuleNames.stetsonWebSocketHandler)
                               , args: unsafeCoerce handler
                               } : routes) })
 

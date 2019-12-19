@@ -27,7 +27,7 @@ import Erl.Cowboy.Handlers.Rest (MovedResult)
 import Erl.Cowboy.Req (Req)
 import Erl.Data.List (List)
 import Erl.Data.Tuple (Tuple2)
-import Stetson (AcceptHandler, Authorized, HttpMethod, InitHandler, InitResult(..), ProvideHandler, RestHandler, RestResult(..), StetsonHandler(..))
+import Stetson (AcceptHandler, Authorized, HttpMethod, InitHandler, InitResult(..), InnerStetsonHandler(..), ProvideHandler, RestHandler, RestResult(..), StetsonHandler)
 
 -- | Create a cowboy REST handler with the provided Init handler and no callbacks defined
 handler :: forall state. InitHandler state -> RestHandler state

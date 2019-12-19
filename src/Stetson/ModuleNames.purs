@@ -10,3 +10,6 @@ stetsonRest = ModuleName "Stetson.Rest"
 
 stetsonRestHandler :: ModuleName
 stetsonRestHandler = ModuleName "Stetson.RestHandler"
+
+stetsonWebSocketHandler :: ModuleName
+stetsonWebSocketHandler = ModuleName "Stetson.WebSocketHandler"
