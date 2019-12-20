@@ -77,6 +77,7 @@ type ProvideHandler state = Req -> state -> Effect (RestResult String state)
 type RestHandler state = {
     init :: Req -> Effect (InitResult state)
   , allowedMethods :: Maybe (Req -> state -> Effect (RestResult (List HttpMethod) state))
+  , malformedRequest :: Maybe (Req -> state -> Effect (RestResult Boolean state))
   , resourceExists :: Maybe (Req -> state -> Effect (RestResult Boolean state))
   , contentTypesAccepted :: Maybe (Req -> state -> Effect (RestResult (List (Tuple2 String (AcceptHandler state))) state))
   , contentTypesProvided :: Maybe (Req -> state -> Effect (RestResult (List (Tuple2 String (ProvideHandler state))) state))
@@ -87,6 +88,7 @@ type RestHandler state = {
   , movedPermanently :: Maybe (Req -> state -> Effect (RestResult MovedResult state))
   , serviceAvailable :: Maybe (Req -> state -> Effect (RestResult Boolean state))
   , previouslyExisted :: Maybe (Req -> state -> Effect (RestResult Boolean state))
+  , allowMissingPost :: Maybe (Req -> state -> Effect (RestResult Boolean state))
   , forbidden :: Maybe (Req -> state -> Effect (RestResult Boolean state))
   }
 

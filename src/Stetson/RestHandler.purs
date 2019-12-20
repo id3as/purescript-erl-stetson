@@ -6,7 +6,7 @@ import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Uncurried (EffectFn2, mkEffectFn2)
 import Erl.Atom (atom)
-import Erl.Cowboy.Handlers.Rest (AcceptCallback(..), AllowedMethodsHandler, ContentType(..), ContentTypesAcceptedHandler, ContentTypesProvidedHandler, DeleteResourceHandler, ForbiddenHandler, InitHandler, IsAuthorizedHandler, IsConflictHandler, MovedPermanentlyHandler, MovedTemporarilyHandler, PreviouslyExistedHandler, ProvideCallback(..), ResourceExistsHandler, ServiceAvailableHandler, authorized, contentTypesAcceptedResult, contentTypesProvidedResult, initResult, unauthorized)
+import Erl.Cowboy.Handlers.Rest (AcceptCallback(..), AllowedMethodsHandler, ContentType(..), ContentTypesAcceptedHandler, ContentTypesProvidedHandler, DeleteResourceHandler, ForbiddenHandler, InitHandler, IsAuthorizedHandler, IsConflictHandler, MovedPermanentlyHandler, MovedTemporarilyHandler, PreviouslyExistedHandler, ProvideCallback(..), ResourceExistsHandler, ServiceAvailableHandler, MalformedRequestHandler, authorized, contentTypesAcceptedResult, contentTypesProvidedResult, initResult, unauthorized)
 import Erl.Cowboy.Handlers.Rest (RestResult, restResult) as Cowboy
 import Erl.Cowboy.Req (Req)
 import Erl.Data.List (List, mapWithIndex, nil, (!!))
@@ -34,9 +34,17 @@ allowed_methods :: forall state. AllowedMethodsHandler (State state)
 allowed_methods = mkEffectFn2 \req state@{ handler, innerState } -> do
   callMap (map show) handler.allowedMethods req state
 
+malformed_request :: forall state. MalformedRequestHandler (State state)
+malformed_request = mkEffectFn2 \req state@{ handler, innerState } -> do
+  call handler.malformedRequest req state
+
 previously_existed :: forall state. PreviouslyExistedHandler (State state)
 previously_existed = mkEffectFn2 \req state@{ handler, innerState } -> do
   call handler.previouslyExisted req state
+
+allow_missing_post :: forall state. PreviouslyExistedHandler (State state)
+allow_missing_post = mkEffectFn2 \req state@{ handler, innerState } -> do
+  call handler.allowMissingPost req state
 
 moved_permanently :: forall state. MovedPermanentlyHandler (State state)
 moved_permanently = mkEffectFn2 \req state@{ handler, innerState } -> do
