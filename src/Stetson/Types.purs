@@ -66,6 +66,8 @@ type RestHandler state = {
     init :: Req -> Effect (InitResult state)
   , allowedMethods :: Maybe (Req -> state -> Effect (RestResult (List HttpMethod) state))
   , resourceExists :: Maybe (Req -> state -> Effect (RestResult Boolean state))
+  , malformedRequest :: Maybe (Req -> state -> Effect (RestResult Boolean state))
+  , allowMissingPost :: Maybe (Req -> state -> Effect (RestResult Boolean state))
   , contentTypesAccepted :: Maybe (Req -> state -> Effect (RestResult (List (Tuple2 String (AcceptHandler state))) state))
   , contentTypesProvided :: Maybe (Req -> state -> Effect (RestResult (List (Tuple2 String (ProvideHandler state))) state))
   , deleteResource :: Maybe (Req -> state -> Effect (RestResult Boolean state))

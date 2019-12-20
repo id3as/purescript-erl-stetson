@@ -2,7 +2,9 @@
 -- | This maps pretty much 1-1 onto https://ninenines.eu/docs/en/cowboy/2.5/guide/rest_handlers/#_callbacks
 -- | Although only the handlers that we have needed so far are defined - feel free to send pull requests that add the ones you need
 module Stetson.Rest ( handler
+                    , allowMissingPost
                     , allowedMethods
+                    , malformedRequest
                     , resourceExists
                     , isAuthorized
                     , isConflict
@@ -35,6 +37,7 @@ handler :: forall state. InitHandler state -> RestHandler state
 handler init = {
   init
   , allowedMethods: Nothing
+  , malformedRequest: Nothing
   , resourceExists: Nothing
   , contentTypesAccepted: Nothing
   , contentTypesProvided: Nothing
@@ -45,12 +48,17 @@ handler init = {
   , movedPermanently: Nothing
   , serviceAvailable: Nothing
   , previouslyExisted: Nothing
+  , allowMissingPost: Nothing
   , forbidden: Nothing
   }
 
 -- | Add an allowedMethods callback to the provided RestHandler
 allowedMethods :: forall state. (Req -> state -> Effect (RestResult (List HttpMethod) state)) -> RestHandler state -> RestHandler state
 allowedMethods fn handler_ = (handler_ { allowedMethods = Just fn })
+
+-- | Add an malformedRequest callback to the provided RestHandler
+malformedRequest :: forall state. (Req -> state -> Effect (RestResult Boolean state)) -> RestHandler state -> RestHandler state
+malformedRequest fn handler_ = (handler_ { malformedRequest = Just fn })
 
 -- | Add a resourceExists callback to the provided RestHandler
 resourceExists :: forall state. (Req -> state -> Effect (RestResult Boolean state)) -> RestHandler state -> RestHandler state
@@ -92,6 +100,10 @@ serviceAvailable fn handler_ = (handler_ { serviceAvailable = Just fn })
 -- | Add a previouslyExisted callback to the provided RestHandler
 previouslyExisted :: forall state. (Req -> state -> Effect (RestResult Boolean state)) -> RestHandler state -> RestHandler state
 previouslyExisted fn handler_ = (handler_ { previouslyExisted = Just fn })
+
+-- | Add a allowMissingPost callback to the provided RestHandler
+allowMissingPost :: forall state. (Req -> state -> Effect (RestResult Boolean state)) -> RestHandler state -> RestHandler state
+allowMissingPost fn handler_ = (handler_ { allowMissingPost = Just fn })
 
 -- | Add a forbidden callback to the provided RestHandler
 forbidden :: forall state. (Req -> state -> Effect (RestResult Boolean state)) -> RestHandler state -> RestHandler state
