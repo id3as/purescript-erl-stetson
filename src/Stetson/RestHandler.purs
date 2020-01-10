@@ -7,7 +7,7 @@ import Effect (Effect)
 import Effect.Uncurried (EffectFn2, mkEffectFn2)
 import Erl.Atom (atom)
 import Erl.Cowboy.Handlers.Rest (AcceptCallback(..), AllowedMethodsHandler, ContentType(..), ContentTypesAcceptedHandler, ContentTypesProvidedHandler, DeleteResourceHandler, ForbiddenHandler, InitHandler, IsAuthorizedHandler, IsConflictHandler, MovedPermanentlyHandler, MovedTemporarilyHandler, PreviouslyExistedHandler, ProvideCallback(..), ResourceExistsHandler, ServiceAvailableHandler, MalformedRequestHandler, authorized, contentTypesAcceptedResult, contentTypesProvidedResult, initResult, unauthorized)
-import Erl.Cowboy.Handlers.Rest (RestResult, restResult) as Cowboy
+import Erl.Cowboy.Handlers.Rest (RestResult, restResult, stop) as Cowboy
 import Erl.Cowboy.Req (Req)
 import Erl.Data.List (List, mapWithIndex, nil, (!!))
 import Erl.Data.Tuple (tuple2, uncurry2)
@@ -86,10 +86,17 @@ content_types_accepted = mkEffectFn2 \req state@{ handler, innerState } ->
   case handler.contentTypesAccepted of
        Nothing -> noCall
        Just factory -> do
-          RestOk callbacks req2 innerState2 <- factory req innerState
-          let fns = map (\tuple -> uncurry2 (\ct fn -> fn) tuple) callbacks
-              atoms = mapWithIndex (\tuple i -> uncurry2 (\ct _ -> tuple2 (SimpleContentType ct) $ AcceptCallback $ atom $ "accept_" <> show i) tuple) callbacks
-          pure $ Cowboy.restResult (contentTypesAcceptedResult atoms) (state { innerState = innerState2, acceptHandlers = fns }) req2
+          factoryResp <- factory req innerState
+          case factoryResp of
+            RestOk callbacks req2 innerState2 ->
+              let
+                fns = map (\tuple -> uncurry2 (\ct fn -> fn) tuple) callbacks
+                atoms = mapWithIndex (\tuple i -> uncurry2 (\ct _ -> tuple2 (SimpleContentType ct) $ AcceptCallback $ atom $ "accept_" <> show i) tuple) callbacks
+              in
+                pure $ Cowboy.restResult (contentTypesAcceptedResult atoms) (state { innerState = innerState2, acceptHandlers = fns }) req2
+            RestStop req2 innerState2 ->
+              pure $ Cowboy.stop (state { innerState = innerState2}) req2
+
 
 -- TODO: iodata/stream/etc
 content_types_provided :: forall state. ContentTypesProvidedHandler (State state)
@@ -97,10 +104,16 @@ content_types_provided = mkEffectFn2 \req state@{ handler, innerState } ->
   case handler.contentTypesProvided of
        Nothing -> noCall
        Just factory -> do
-          RestOk callbacks req2 innerState2 <- factory req innerState
-          let fns = map (\tuple -> uncurry2 (\ct fn -> fn) tuple) callbacks
-              atoms = mapWithIndex (\tuple i -> uncurry2 (\ct _ -> tuple2 (SimpleContentType ct) $ ProvideCallback $ atom $ "provide_" <> show i) tuple) callbacks
-          pure $ Cowboy.restResult (contentTypesProvidedResult atoms) (state { innerState = innerState2, provideHandlers = fns }) req2
+          factoryResp <- factory req innerState
+          case factoryResp of
+            RestOk callbacks req2 innerState2 ->
+              let
+                fns = map (\tuple -> uncurry2 (\ct fn -> fn) tuple) callbacks
+                atoms = mapWithIndex (\tuple i -> uncurry2 (\ct _ -> tuple2 (SimpleContentType ct) $ ProvideCallback $ atom $ "provide_" <> show i) tuple) callbacks
+              in
+                pure $ Cowboy.restResult (contentTypesProvidedResult atoms) (state { innerState = innerState2, provideHandlers = fns }) req2
+            RestStop req2 innerState2 ->
+                pure $ Cowboy.stop (state { innerState = innerState2}) req2
 
 callMap :: forall state reply mappedReply. (reply -> mappedReply) -> Maybe (Req -> state -> Effect (RestResult reply state)) -> Req -> (State state) -> Effect (Cowboy.RestResult mappedReply (State state))
 callMap mapFn fn req state = restResult state $ map (mapReply mapFn) $ fn <*> pure req <*> pure state.innerState
@@ -110,13 +123,19 @@ call fn req state = restResult state $ fn <*> pure req <*> pure state.innerState
 
 mapReply :: forall state reply mappedReply. (reply -> mappedReply) -> Effect (RestResult reply state) -> Effect (RestResult mappedReply state)
 mapReply mapFn org = do
-  (RestOk re rq st) <- org
-  pure $ RestOk (mapFn re) rq st
+  orgResult <- org
+  case orgResult of
+    RestOk re rq st -> pure $ RestOk (mapFn re) rq st
+    RestStop rq st -> pure $ RestStop rq st
 
 restResult :: forall reply state. State state -> Maybe (Effect (RestResult reply state)) -> Effect (Cowboy.RestResult reply (State state))
-restResult outerState (Just result) = do
-  (RestOk re rq st) <- result
-  pure $ Cowboy.restResult re (outerState { innerState = st }) rq
+restResult outerState (Just callback) = do
+  result <- callback
+  case result of
+    RestOk re rq st -> pure $ Cowboy.restResult re (outerState { innerState = st }) rq
+    RestStop rq st ->
+      do
+        pure $ Cowboy.stop (outerState { innerState = st }) rq
 
 -- This is an internal Cowboy detail, and we *must not* use the value from this once we've returned it
 -- Cowboy may not support this in the future, but hopefully it will - essentially it means that

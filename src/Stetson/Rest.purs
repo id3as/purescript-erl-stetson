@@ -18,6 +18,7 @@ module Stetson.Rest ( handler
                     , forbidden
                     , initResult
                     , result
+                    , stop
                     , yeeha
                     )
   where
@@ -68,7 +69,6 @@ resourceExists fn handler_ = (handler_ { resourceExists = Just fn })
 isAuthorized :: forall state. (Req -> state -> Effect (RestResult Authorized state)) -> RestHandler state -> RestHandler state
 isAuthorized fn handler_ = (handler_ { isAuthorized = Just fn })
 
-
 -- | Add an isConflict callback to the provided RestHandler
 isConflict :: forall state. (Req -> state -> Effect (RestResult Boolean state)) -> RestHandler state -> RestHandler state
 isConflict fn handler_ = (handler_ { isConflict = Just fn })
@@ -113,9 +113,13 @@ forbidden fn handler_ = (handler_ { forbidden = Just fn })
 initResult :: forall state. Req -> state -> Effect (InitResult state)
 initResult rq st = pure $ InitOk rq st
 
--- | Create an rest response for return from a rest callback
+-- | Create a rest response for return from a rest callback
 result :: forall reply state. reply -> Req -> state -> Effect (RestResult reply state)
 result re rq st = pure $ RestOk re rq st
+
+-- | Create a rest stop response for return from a rest callback
+stop :: forall reply state. Req -> state -> Effect (RestResult reply state)
+stop rq st = pure $ RestStop rq st
 
 -- | Finish defining this rest handler_, yeehaaw
 yeeha :: forall state. RestHandler state -> StetsonHandler state

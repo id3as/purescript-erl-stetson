@@ -47,7 +47,9 @@ foreign import data HandlerArgs :: Type
 
 
 -- | The return type of most of the callbacks invoked as part of the REST workflow
-data RestResult reply state = RestOk reply Req state
+data RestResult reply state
+  = RestOk reply Req state
+  | RestStop Req state
 
 -- | The return type of the 'init' callback in the REST workflow
 data InitResult state = InitOk Req state
@@ -102,17 +104,17 @@ data WebSocketCallResult state = NoReply state
                                | Reply (List Frame) state
                                | ReplyAndHibernate (List Frame) state
                                | Stop state
-  
+
 
 -- | Router used to generate messages of the right type that'll appear
 -- | in the info callback of a WebSocket handler
 type WebSocketMessageRouter msg = (msg -> Effect Unit)
 
--- | Callback used to kick off the WebSocket handler, it is here where subscriptions should be 
+-- | Callback used to kick off the WebSocket handler, it is here where subscriptions should be
 -- | created, and in their callbacks the messages should be passed into the router for dealing with in the info callback
 type WebSocketInitHandler msg state = WebSocketMessageRouter msg -> state -> Effect (WebSocketCallResult state)
 
--- | Callback used to handle messages sent from the client in the form of 'Frames' which will need 
+-- | Callback used to handle messages sent from the client in the form of 'Frames' which will need
 -- | unpacking/decoding/parsing etc
 type WebSocketHandleHandler msg state = Frame -> state -> Effect (WebSocketCallResult state)
 
@@ -129,7 +131,7 @@ type WebSocketHandler msg state = {
   }
 
 
--- | For backwards compatability purposes, the default stetson handler 
+-- | For backwards compatability purposes, the default stetson handler
 -- | doesn't have a message type so it defaults to 'Unit'
 type StetsonHandler state = InnerStetsonHandler Unit state
 
@@ -143,7 +145,7 @@ data InnerStetsonHandler msg state = Rest (RestHandler state)
 data StaticAssetLocation = PrivDir String String
                          | PrivFile String String
 
-type StetsonRoute = 
+type StetsonRoute =
   { route :: String
   , moduleName :: NativeModuleName
   , args :: HandlerArgs
