@@ -20,6 +20,7 @@ module Stetson.Rest ( handler
                     , result
                     , stop
                     , preHook
+                    , preHook'
                     , yeeha
                     )
   where
@@ -131,11 +132,22 @@ yeeha = Rest
 --------------------------------------------------------------------------------
 -- Debug helpers
 --------------------------------------------------------------------------------
--- | Add a hook in front of every call to a handler
 preHook :: forall state.
-           (forall a. (String -> (Req -> state -> Effect a) -> (Req -> state -> Effect a)))
+           (forall state2. String -> Req -> state2 -> Effect Unit)
              -> RestHandler state -> RestHandler state
-preHook hook state =
+
+preHook hook =
+  preHook'
+    \name orgHandler ->
+      \req state -> do
+        _ <- hook name req state
+        orgHandler req state
+
+-- | Add a hook in front of every call to a handler
+preHook' :: forall state.
+           (forall a state2. (String -> (Req -> state2 -> Effect a) -> (Req -> state2 -> Effect a)))
+             -> RestHandler state -> RestHandler state
+preHook' hook state =
   { init: state.init
   , allowedMethods       : hook "allowedMethods"       <$> state.allowedMethods
   , malformedRequest     : hook "malformedRequest"     <$> state.malformedRequest
