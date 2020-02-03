@@ -19,6 +19,8 @@ module Stetson.Rest ( handler
                     , initResult
                     , result
                     , stop
+                    , preHook
+                    , preHook'
                     , yeeha
                     )
   where
@@ -37,20 +39,20 @@ import Stetson (AcceptHandler, Authorized, HttpMethod, InitHandler, InitResult(.
 handler :: forall state. InitHandler state -> RestHandler state
 handler init = {
   init
-  , allowedMethods: Nothing
-  , malformedRequest: Nothing
-  , resourceExists: Nothing
-  , contentTypesAccepted: Nothing
-  , contentTypesProvided: Nothing
-  , deleteResource: Nothing
-  , isAuthorized: Nothing
-  , isConflict: Nothing
-  , movedTemporarily: Nothing
-  , movedPermanently: Nothing
-  , serviceAvailable: Nothing
-  , previouslyExisted: Nothing
-  , allowMissingPost: Nothing
-  , forbidden: Nothing
+  , allowedMethods       : Nothing
+  , malformedRequest     : Nothing
+  , resourceExists       : Nothing
+  , contentTypesAccepted : Nothing
+  , contentTypesProvided : Nothing
+  , deleteResource       : Nothing
+  , isAuthorized         : Nothing
+  , isConflict           : Nothing
+  , movedTemporarily     : Nothing
+  , movedPermanently     : Nothing
+  , serviceAvailable     : Nothing
+  , previouslyExisted    : Nothing
+  , allowMissingPost     : Nothing
+  , forbidden            : Nothing
   }
 
 -- | Add an allowedMethods callback to the provided RestHandler
@@ -124,3 +126,41 @@ stop rq st = pure $ RestStop rq st
 -- | Finish defining this rest handler_, yeehaaw
 yeeha :: forall state. RestHandler state -> StetsonHandler state
 yeeha = Rest
+
+
+
+--------------------------------------------------------------------------------
+-- Debug helpers
+--------------------------------------------------------------------------------
+preHook :: forall state.
+           (forall state2. String -> Req -> state2 -> Effect Unit)
+             -> RestHandler state -> RestHandler state
+
+preHook hook =
+  preHook'
+    \name orgHandler ->
+      \req state -> do
+        _ <- hook name req state
+        orgHandler req state
+
+-- | Add a hook in front of every call to a handler
+preHook' :: forall state.
+           (forall a state2. (String -> (Req -> state2 -> Effect a) -> (Req -> state2 -> Effect a)))
+             -> RestHandler state -> RestHandler state
+preHook' hook state =
+  { init: state.init
+  , allowedMethods       : hook "allowedMethods"       <$> state.allowedMethods
+  , malformedRequest     : hook "malformedRequest"     <$> state.malformedRequest
+  , resourceExists       : hook "resourceExists"       <$> state.resourceExists
+  , contentTypesAccepted : hook "contentTypesAccepted" <$> state.contentTypesAccepted
+  , contentTypesProvided : hook "contentTypesProvided" <$> state.contentTypesProvided
+  , deleteResource       : hook "deleteResource"       <$> state.deleteResource
+  , isAuthorized         : hook "isAuthorized"         <$> state.isAuthorized
+  , isConflict           : hook "isConflict"           <$> state.isConflict
+  , movedTemporarily     : hook "movedTemporarily"     <$> state.movedTemporarily
+  , movedPermanently     : hook "movedPermanently"     <$> state.movedPermanently
+  , serviceAvailable     : hook "serviceAvailable"     <$> state.serviceAvailable
+  , previouslyExisted    : hook "previouslyExisted"    <$> state.previouslyExisted
+  , allowMissingPost     : hook "allowMissingPost"     <$> state.allowMissingPost
+  , forbidden            : hook "forbidden"            <$> state.forbidden
+  }
