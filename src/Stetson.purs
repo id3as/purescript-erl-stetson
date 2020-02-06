@@ -76,8 +76,8 @@ routes routing d config = config { routing = routing, dispatch = dispatchTable d
 
 -- | Introduce a list of native Erlang cowboy handlers to this config
 cowboyRoutes :: forall a. List Path -> StetsonConfig a -> StetsonConfig a
-cowboyRoutes newRoutes config@{ cowboyRoutes } = 
-  (config { cowboyRoutes = reverse newRoutes <> cowboyRoutes })
+cowboyRoutes newRoutes config@{ cowboyRoutes: existingRoutes } = 
+  (config { cowboyRoutes = reverse newRoutes <> existingRoutes })
 
 -- | Set the port that this http listener will listen to
 port :: forall a. Int -> StetsonConfig a -> StetsonConfig a
@@ -101,7 +101,7 @@ middlewares mws config =
 
 -- | Start the listener with the specified name
 startClear :: forall a. String -> StetsonConfig a -> Effect Unit
-startClear name config@{ bindAddress, bindPort, streamHandlers: streamHandlers_, middlewares: middlewares_, cowboyRoutes } = do
+startClear name config@{ bindAddress, bindPort, streamHandlers: streamHandlers_, middlewares: middlewares_, cowboyRoutes: cowboyRoutes' } = do
   let paths = reverse cowboyRoutes
       dispatch = Routes.compile $ singleton $ Routes.anyHost paths
       transOpts = Ip bindAddress : Port bindPort : nil
@@ -114,7 +114,7 @@ startClear name config@{ bindAddress, bindPort, streamHandlers: streamHandlers_,
   _ <- Cowboy.startClear (atom name) transOpts protoOpts
   pure unit
   where
-  unmatched _ = if null cowboyRoutes
+  unmatched _ = if null cowboyRoutes'
                 then Default
                 else CowboyRouterFallback
 
