@@ -3,7 +3,7 @@
   "set": "id3as-20190409",
   "source": "https://github.com/id3as/purerl-package-sets.git",
   "depends": [
-	"erl-cowboy",
-	"erl-lager"
+  "erl-cowboy"
+  
   ]
 }

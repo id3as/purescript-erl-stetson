@@ -11,7 +11,7 @@ import Erl.Cowboy.Handlers.Rest (RestResult, restResult, stop) as Cowboy
 import Erl.Cowboy.Req (Req)
 import Erl.Data.List (List, mapWithIndex, nil, (!!))
 import Erl.Data.Tuple (tuple2, uncurry2)
-import Stetson (InitResult(..), RestHandler, RestResult(..), Authorized(..))
+import Stetson.Types (Authorized(..), InitResult(..), RestHandler, RestResult(..))
 import Unsafe.Coerce (unsafeCoerce)
 
 type State state =

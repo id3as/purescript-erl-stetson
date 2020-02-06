@@ -11,5 +11,14 @@ stetsonRest = ModuleName "Stetson.Rest"
 stetsonRestHandler :: ModuleName
 stetsonRestHandler = ModuleName "Stetson.RestHandler"
 
+stetsonRouting :: ModuleName
+stetsonRouting = ModuleName "Stetson.Routing"
+
+stetsonTypes :: ModuleName
+stetsonTypes = ModuleName "Stetson.Types"
+
+stetsonWebSocket :: ModuleName
+stetsonWebSocket = ModuleName "Stetson.WebSocket"
+
 stetsonWebSocketHandler :: ModuleName
 stetsonWebSocketHandler = ModuleName "Stetson.WebSocketHandler"

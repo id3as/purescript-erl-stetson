@@ -20,18 +20,23 @@ module Stetson.Types ( RestResult(..)
                , HandlerArgs
                , ConfiguredRoute(..)
                , StetsonConfig
+               , RouteHandler(..)
                ) where
 
 import Prelude
+
+import Data.Exists (Exists)
 import Data.Maybe (Maybe)
 import Effect (Effect)
 import Erl.Cowboy.Handlers.Rest (MovedResult)
 import Erl.Cowboy.Handlers.WebSocket (Frame)
 import Erl.Cowboy.Req (Req)
 import Erl.Cowboy.Routes (Path)
+import Erl.Cowboy.Routes as Routes
 import Erl.Data.List (List)
 import Erl.Data.Tuple (Tuple2, Tuple4)
 import Erl.ModuleName (NativeModuleName)
+import Routing.Duplex (RouteDuplex')
 
 foreign import data HandlerArgs :: Type
 
@@ -97,7 +102,6 @@ instance showHttpMethod :: Show HttpMethod where
                      PUT -> "PUT"
                      DELETE -> "DELETE"
 
-
 -- | Return type of most WebSocket callbacks
 data WebSocketCallResult state = NoReply state
                                | Hibernate state
@@ -153,12 +157,16 @@ type StetsonRoute =
 
 data ConfiguredRoute = Stetson StetsonRoute | Cowboy Path
 
+data RouteHandler = StetsonRoute (Exists (InnerStetsonHandler Unit)) | StaticRoute StaticAssetLocation
+
 -- Probably want to make this look a bit more like Cowboy's config internally
 -- Lists of maps or tuples or whatever the hell cowboy is using in whatever version we're bound to
-type StetsonConfig =
+type StetsonConfig a =
   { bindPort :: Int
   , bindAddress :: Tuple4 Int Int Int Int
   , streamHandlers :: Maybe (List NativeModuleName)
   , middlewares :: Maybe (List NativeModuleName)
-  , routes :: List ConfiguredRoute
+  , cowboyRoutes :: List Routes.Path
+  , routing :: RouteDuplex' a
+  , dispatch :: a -> RouteHandler
   }
