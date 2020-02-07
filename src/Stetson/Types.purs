@@ -16,9 +16,7 @@ module Stetson.Types ( RestResult(..)
                , InnerStetsonHandler(..)
                , ReceivingStetsonHandler(..)
                , StaticAssetLocation(..)
-               , StetsonRoute
                , HandlerArgs
-               , ConfiguredRoute(..)
                , StetsonConfig
                , RouteHandler(..)
                ) where
@@ -31,7 +29,6 @@ import Effect (Effect)
 import Erl.Cowboy.Handlers.Rest (MovedResult)
 import Erl.Cowboy.Handlers.WebSocket (Frame)
 import Erl.Cowboy.Req (Req)
-import Erl.Cowboy.Routes (Path)
 import Erl.Cowboy.Routes as Routes
 import Erl.Data.List (List)
 import Erl.Data.Tuple (Tuple2, Tuple4)
@@ -149,15 +146,7 @@ data InnerStetsonHandler msg state = Rest (RestHandler state)
 data StaticAssetLocation = PrivDir String String
                          | PrivFile String String
 
-type StetsonRoute =
-  { route :: String
-  , moduleName :: NativeModuleName
-  , args :: HandlerArgs
-  }
-
-data ConfiguredRoute = Stetson StetsonRoute | Cowboy Path
-
-data RouteHandler = StetsonRoute (Exists (InnerStetsonHandler Unit)) | StaticRoute StaticAssetLocation
+data RouteHandler = StetsonRoute (Exists (InnerStetsonHandler Unit)) | StaticRoute (Array String) StaticAssetLocation
 
 -- Probably want to make this look a bit more like Cowboy's config internally
 -- Lists of maps or tuples or whatever the hell cowboy is using in whatever version we're bound to

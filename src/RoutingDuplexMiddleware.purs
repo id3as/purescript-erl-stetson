@@ -12,7 +12,7 @@ import Erl.Cowboy (Env)
 import Erl.Cowboy.Req (Req, StatusCode(..))
 import Erl.Cowboy.Req as Req
 import Erl.Data.Map as Map
-import Erl.Data.Tuple (Tuple3, tuple2, tuple3)
+import Erl.Data.Tuple (Tuple2, tuple2, tuple3, uncurry2)
 import Erl.ModuleName (NativeModuleName)
 import Foreign (Foreign, unsafeFromForeign, unsafeToForeign)
 import Foreign as Foreign
@@ -26,7 +26,7 @@ routesKey = atom "routes"
 data UnmatchedHandler = CowboyRouterFallback | Default | DefaultHandler ModuleInfo
 
 type Config a =
-  { dispatch :: a -> ModuleInfo
+  { dispatch :: Req -> a -> Tuple2 Req ModuleInfo
   , unmatched :: RouteError -> UnmatchedHandler
   }
 
@@ -55,10 +55,11 @@ execute req env = unsafePerformEffect $ do
     Just routesConfig -> do
       let Routes routes { dispatch, unmatched } = unsafeFromForeign routesConfig
       case parse routes (Req.path req) of
-        Right parsedRoute ->
-          let env' = updateEnv (dispatch parsedRoute) env
-          in pure $ okResult req env'
-        Left err -> 
+        Right parsedRoute -> do
+          flip uncurry2 (dispatch req parsedRoute) \req' dispatched -> 
+            let env' = updateEnv dispatched env
+            in pure $ okResult req' env'
+        Left err -> do
           case unmatched err of
             Default -> do
               req' <- Req.replyStatus (StatusCode 404) req

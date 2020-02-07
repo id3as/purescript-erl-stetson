@@ -14,21 +14,24 @@ module Stetson
   where
 
 import Prelude
+import Stetson.Types (AcceptHandler, Authorized(..), HandlerArgs, HttpMethod(..), InitHandler, InitResult(..), InnerStetsonHandler(..), ProvideHandler, ReceivingStetsonHandler, RestHandler, RestResult(..), RouteHandler(..), StaticAssetLocation(..), StetsonConfig, StetsonHandler, WebSocketCallResult(..), WebSocketHandleHandler, WebSocketHandler, WebSocketInfoHandler, WebSocketInitHandler, WebSocketMessageRouter)
 
 import Cowboy.Static as CowboyStatic
 import Data.Exists (mkExists, runExists)
 import Data.Generic.Rep (class Generic, NoArguments, from)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import Erl.Atom (atom)
+import Erl.Atom (Atom, atom)
 import Erl.Cowboy (ProtoOpt(..), TransOpt(..), protocolOpts)
 import Erl.Cowboy as Cowboy
+import Erl.Cowboy.Req (Req)
 import Erl.Cowboy.Routes (Path)
 import Erl.Cowboy.Routes as Routes
 import Erl.Data.List (List, nil, null, reverse, singleton, (:))
 import Erl.Data.List as List
+import Erl.Data.Map (Map)
 import Erl.Data.Map as Map
-import Erl.Data.Tuple (tuple3, tuple4)
+import Erl.Data.Tuple (tuple2, tuple3, tuple4)
 import Erl.ModuleName (NativeModuleName(..), nativeModuleName)
 import Foreign (Foreign, unsafeToForeign)
 import Routing.Duplex (RouteDuplex', root)
@@ -38,7 +41,7 @@ import RoutingDuplexMiddleware as RoutingMiddleware
 import Stetson.ModuleNames as ModuleNames
 import Stetson.Routing (class GDispatch, gDispatch)
 import Stetson.Routing as Routing
-import Stetson.Types (AcceptHandler, Authorized(..), ConfiguredRoute(..), HandlerArgs, HttpMethod(..), InitHandler, InitResult(..), InnerStetsonHandler(..), ProvideHandler, ReceivingStetsonHandler, RestHandler, RestResult(..), RouteHandler(..), StaticAssetLocation(..), StetsonConfig, StetsonHandler, StetsonRoute, WebSocketCallResult(..), WebSocketHandleHandler, WebSocketHandler, WebSocketInfoHandler, WebSocketInitHandler, WebSocketMessageRouter)
+import Unsafe.Coerce (unsafeCoerce)
 
 -- | Creates a blank stetson config with default settings and no routes
 configure :: StetsonConfig NoArguments
@@ -102,8 +105,7 @@ middlewares mws config =
 -- | Start the listener with the specified name
 startClear :: forall a. String -> StetsonConfig a -> Effect Unit
 startClear name config@{ bindAddress, bindPort, streamHandlers: streamHandlers_, middlewares: middlewares_, cowboyRoutes: cowboyRoutes' } = do
-  let paths = reverse cowboyRoutes
-      dispatch = Routes.compile $ singleton $ Routes.anyHost paths
+  let dispatch = Routes.compile $ singleton $ Routes.anyHost $ reverse cowboyRoutes'
       transOpts = Ip bindAddress : Port bindPort : nil
       protoOpts = protocolOpts $
         singleton (Env (Map.empty # Cowboy.dispatch dispatch
@@ -118,19 +120,21 @@ startClear name config@{ bindAddress, bindPort, streamHandlers: streamHandlers_,
                 then Default
                 else CowboyRouterFallback
 
-  mapping route = 
+  mapping req route = 
     case config.dispatch route of
-      StetsonRoute handler ->
+      StetsonRoute handler -> tuple2 req
         { mod: nativeModuleName ModuleNames.stetsonRestHandler
         , args: runExists handlerToForeign handler
-        }
-      StaticRoute (PrivDir app dir) -> 
+        } 
+      StaticRoute pathSegments (PrivDir app dir) -> 
+        let req' = Map.insert (atom "path_info") (List.fromFoldable pathSegments) (unsafeCoerce req :: Map Atom (List String))
+        in tuple2 (unsafeCoerce req' :: Req)
         { mod: CowboyStatic.moduleName
-        , args: unsafeToForeign $ tuple3 (atom "priv_dir") app dir
-        }
-      StaticRoute (PrivFile app file) -> 
+        , args: unsafeToForeign $ tuple3 (atom "priv_dir") (atom app) dir
+        } 
+      StaticRoute _ (PrivFile app file) -> tuple2 req
         { mod: CowboyStatic.moduleName
-        , args: unsafeToForeign $ tuple3 (atom "priv_file") app file
+        , args: unsafeToForeign $ tuple3 (atom "priv_file") (atom app) file
         }
   handlerToForeign :: forall b c. InnerStetsonHandler b c -> Foreign 
   handlerToForeign (Rest h) = unsafeToForeign h
