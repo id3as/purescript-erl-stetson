@@ -26,7 +26,7 @@ routesKey = atom "routes"
 data UnmatchedHandler = CowboyRouterFallback | Default | DefaultHandler ModuleInfo
 
 type Config a =
-  { dispatch :: Req -> a -> Tuple2 Req ModuleInfo
+  { dispatch :: Req -> a -> Tuple2 Req (Either UnmatchedHandler ModuleInfo)
   , unmatched :: RouteError -> UnmatchedHandler
   }
 
@@ -56,20 +56,25 @@ execute req env = unsafePerformEffect $ do
       let Routes routes { dispatch, unmatched } = unsafeFromForeign routesConfig
       case parse routes (Req.path req) of
         Right parsedRoute -> do
-          flip uncurry2 (dispatch req parsedRoute) \req' dispatched -> 
-            let env' = updateEnv dispatched env
-            in pure $ okResult req' env'
-        Left err -> do
-          case unmatched err of
-            Default -> do
-              req' <- Req.replyStatus (StatusCode 404) req
-              pure $ stopResult req'
-            DefaultHandler handler -> 
-              let env' = updateEnv handler env
-              in pure $ okResult req env'
-            CowboyRouterFallback ->
-              cowboyRouterExecute req env
+          flip uncurry2 (dispatch req parsedRoute) \req' dispatched ->
+            case dispatched of
+              Left unmatched -> handleUnmatched unmatched
+              Right matched ->
+                let env' = updateEnv matched env
+                in pure $ okResult req' env'
+        Left err -> handleUnmatched $ unmatched err
   where
+    handleUnmatched =
+      case _ of
+        Default -> do
+          req' <- Req.replyStatus (StatusCode 404) req
+          pure $ stopResult req'
+        DefaultHandler handler -> 
+          let env' = updateEnv handler env
+          in pure $ okResult req env'
+        CowboyRouterFallback ->
+          cowboyRouterExecute req env
+
     updateEnv { mod, args } env = 
       Map.insert (atom "handler") (unsafeToForeign mod) 
       $ Map.insert (atom "handler_opts") args

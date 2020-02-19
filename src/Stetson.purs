@@ -14,9 +14,9 @@ module Stetson
   where
 
 import Prelude
-import Stetson.Types (AcceptHandler, Authorized(..), HandlerArgs, HttpMethod(..), InitHandler, InitResult(..), InnerStetsonHandler(..), ProvideHandler, ReceivingStetsonHandler, RestHandler, RestResult(..), RouteHandler(..), StaticAssetLocation(..), StetsonConfig, StetsonHandler, WebSocketCallResult(..), WebSocketHandleHandler, WebSocketHandler, WebSocketInfoHandler, WebSocketInitHandler, WebSocketMessageRouter)
 
 import Cowboy.Static as CowboyStatic
+import Data.Either (Either(..))
 import Data.Exists (mkExists, runExists)
 import Data.Generic.Rep (class Generic, NoArguments, from)
 import Data.Maybe (Maybe(..))
@@ -41,6 +41,7 @@ import RoutingDuplexMiddleware as RoutingMiddleware
 import Stetson.ModuleNames as ModuleNames
 import Stetson.Routing (class GDispatch, gDispatch)
 import Stetson.Routing as Routing
+import Stetson.Types (AcceptHandler, Authorized(..), HandlerArgs, HttpMethod(..), InitHandler, InitResult(..), InnerStetsonHandler(..), ProvideHandler, ReceivingStetsonHandler, RestHandler, RestResult(..), RouteHandler(..), StaticAssetLocation(..), StetsonConfig, StetsonHandler, WebSocketCallResult(..), WebSocketHandleHandler, WebSocketHandler, WebSocketInfoHandler, WebSocketInitHandler, WebSocketMessageRouter)
 import Unsafe.Coerce (unsafeCoerce)
 
 -- | Creates a blank stetson config with default settings and no routes
@@ -122,20 +123,21 @@ startClear name config@{ bindAddress, bindPort, streamHandlers: streamHandlers_,
 
   mapping req route = 
     case config.dispatch route of
-      StetsonRoute handler -> tuple2 req
+      StetsonRoute handler -> tuple2 req $ Right
         { mod: nativeModuleName ModuleNames.stetsonRestHandler
         , args: runExists handlerToForeign handler
         } 
       StaticRoute pathSegments (PrivDir app dir) -> 
         let req' = Map.insert (atom "path_info") (List.fromFoldable pathSegments) (unsafeCoerce req :: Map Atom (List String))
-        in tuple2 (unsafeCoerce req' :: Req)
+        in tuple2 (unsafeCoerce req' :: Req) $ Right
         { mod: CowboyStatic.moduleName
         , args: unsafeToForeign $ tuple3 (atom "priv_dir") (atom app) dir
         } 
-      StaticRoute _ (PrivFile app file) -> tuple2 req
+      StaticRoute _ (PrivFile app file) -> tuple2 req $ Right
         { mod: CowboyStatic.moduleName
         , args: unsafeToForeign $ tuple3 (atom "priv_file") (atom app) file
         }
+      CowboyRouteFallthrough -> tuple2 req $ Left CowboyRouterFallback
   handlerToForeign :: forall b c. InnerStetsonHandler b c -> Foreign 
   handlerToForeign (Rest h) = unsafeToForeign h
   handlerToForeign (WebSocket h) = unsafeToForeign h

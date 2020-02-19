@@ -8,7 +8,7 @@ import Data.Symbol (class IsSymbol, SProxy(..))
 import Prim.Row as Row
 import Record as Record
 import Stetson.Rest as Rest
-import Stetson.Types (InitResult(..), InnerStetsonHandler(..), RouteHandler(..), StaticAssetLocation, StetsonHandler)
+import Stetson.Types
 
 class GDispatch rep (r :: # Type) | rep -> r where
   gDispatch :: { | r } -> rep -> RouteHandler
@@ -36,7 +36,7 @@ class GDispatchCtor rep f where
 
 instance gDispatchC0 :: GDispatchCtor NoArguments (InnerStetsonHandler Unit s) where
   gDispatchC handler NoArguments = StetsonRoute (mkExists handler)
-instance gDispatchStatic :: GDispatchCtor NoArguments (StaticAssetLocation) where
+instance gDispatchStatic :: GDispatchCtor NoArguments StaticAssetLocation where
   gDispatchC route NoArguments = StaticRoute [] route
 
 instance gDispatchC1 :: GDispatchCtor (Argument a) (a -> (InnerStetsonHandler Unit s)) where
@@ -51,7 +51,8 @@ instance gDispatchCN ::
   GDispatchCtor (Product (Argument a) right) (a -> b) where
   gDispatchC handler (Product (Argument a) right) = gDispatchC (handler a) right
 
-
+instance gDispatchCowboy :: GDispatchCtor any CowboyRoutePlaceholder where
+  gDispatchC route anything = CowboyRouteFallthrough
 
 
 dummyHandler :: StetsonHandler Unit
