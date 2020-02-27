@@ -43,6 +43,8 @@ instance gDispatchC1 :: GDispatchCtor (Argument a) (a -> (InnerStetsonHandler Un
   gDispatchC handler (Argument a) = StetsonRoute (mkExists (handler a))
 instance gDispatchStatic1 :: GDispatchCtor (Argument (Array String)) StaticAssetLocation where
   gDispatchC route (Argument a) = StaticRoute a route
+else instance gDispatchStatic1Ignore :: GDispatchCtor (Argument a) (a -> StaticAssetLocation) where
+  gDispatchC route (Argument a) = StaticRoute [] (route a)
 
 
 instance gDispatchCN :: 
