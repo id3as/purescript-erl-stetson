@@ -41,7 +41,7 @@ import RoutingDuplexMiddleware as RoutingMiddleware
 import Stetson.ModuleNames as ModuleNames
 import Stetson.Routing (class GDispatch, gDispatch)
 import Stetson.Routing as Routing
-import Stetson.Types (AcceptHandler, Authorized(..), HandlerArgs, HttpMethod(..), InitHandler, InitResult(..), InnerStetsonHandler(..), ProvideHandler, ReceivingStetsonHandler, RestHandler, RestResult(..), RouteHandler(..), StaticAssetLocation(..), StetsonConfig, StetsonHandler, WebSocketCallResult(..), WebSocketHandleHandler, WebSocketHandler, WebSocketInfoHandler, WebSocketInitHandler, WebSocketMessageRouter)
+import Stetson.Types (AcceptHandler, Authorized(..), HandlerArgs, HttpMethod(..), InitHandler, InitResult(..), InnerStetsonHandler(..), ProvideHandler, ReceivingStetsonHandler, RestHandler, RestResult(..), RouteHandler(..), StaticAssetLocation(..), StetsonConfig, StetsonHandler, WebSocketCallResult(..), WebSocketHandleHandler, WebSocketHandler, WebSocketInfoHandler, WebSocketInitHandler, WebSocketMessageRouter, runStetsonRoute, mkStetsonRoute)
 import Unsafe.Coerce (unsafeCoerce)
 
 -- | Creates a blank stetson config with default settings and no routes
@@ -56,7 +56,7 @@ configure =
                        )
   , cowboyRoutes : nil
   , routing : root noArgs
-  , dispatch : \_ -> StetsonRoute $ mkExists Routing.dummyHandler
+  , dispatch : \_ -> StetsonRoute $ mkStetsonRoute Routing.dummyHandler
   }
   where
   mod :: String -> NativeModuleName
@@ -123,10 +123,8 @@ startClear name config@{ bindAddress, bindPort, streamHandlers: streamHandlers_,
 
   mapping req route = 
     case config.dispatch route of
-      StetsonRoute handler -> tuple2 req $ Right
-        { mod: nativeModuleName ModuleNames.stetsonRestHandler
-        , args: runExists handlerToForeign handler
-        } 
+      StetsonRoute inner -> runStetsonRoute (mapRoute req) inner
+        
       StaticRoute pathSegments (PrivDir app dir) -> 
         let req' = Map.insert (atom "path_info") (List.fromFoldable pathSegments) (unsafeCoerce req :: Map Atom (List String))
         in tuple2 (unsafeCoerce req' :: Req) $ Right
@@ -138,6 +136,14 @@ startClear name config@{ bindAddress, bindPort, streamHandlers: streamHandlers_,
         , args: unsafeToForeign $ tuple3 (atom "priv_file") (atom app) file
         }
       CowboyRouteFallthrough -> tuple2 req $ Left CowboyRouterFallback
-  handlerToForeign :: forall b c. InnerStetsonHandler b c -> Foreign 
-  handlerToForeign (Rest h) = unsafeToForeign h
-  handlerToForeign (WebSocket h) = unsafeToForeign h
+
+  mapRoute :: forall b c. _ -> InnerStetsonHandler b c -> _
+  mapRoute req = case _ of
+    Rest handler -> tuple2 req $ Right
+        { mod: nativeModuleName ModuleNames.stetsonRestHandler
+        , args: unsafeToForeign handler
+        } 
+    WebSocket handler -> tuple2 req $ Right
+        { mod: nativeModuleName ModuleNames.stetsonWebSocketHandler
+        , args: unsafeToForeign handler
+        }

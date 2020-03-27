@@ -20,11 +20,14 @@ module Stetson.Types ( RestResult(..)
                , HandlerArgs
                , StetsonConfig
                , RouteHandler(..)
+               , StetsonRouteInner
+               , mkStetsonRoute
+               , runStetsonRoute
                ) where
 
 import Prelude
 
-import Data.Exists (Exists)
+import Data.Exists (mkExists, runExists, Exists)
 import Data.Maybe (Maybe)
 import Effect (Effect)
 import Erl.Cowboy.Handlers.Rest (MovedResult)
@@ -149,8 +152,19 @@ data StaticAssetLocation = PrivDir String String
 
 data CowboyRoutePlaceholder = CowboyRoutePlaceholder
 
+newtype StetsonRouteInner a = StetsonRouteInner (Exists (InnerStetsonHandler a))
+
+
+mkStetsonRoute r = mkExists (StetsonRouteInner $ mkExists r)
+
+runStetsonRoute :: forall z. (forall b c. InnerStetsonHandler b c -> z) -> Exists StetsonRouteInner -> z
+runStetsonRoute runHandler r = runExists runInner r
+  where
+  runInner :: forall a. StetsonRouteInner a -> z
+  runInner (StetsonRouteInner inner) = runExists runHandler inner
+
 data RouteHandler
-  = StetsonRoute (Exists (InnerStetsonHandler Unit))
+  = StetsonRoute (Exists StetsonRouteInner)
   | StaticRoute (Array String) StaticAssetLocation
   | CowboyRouteFallthrough
 

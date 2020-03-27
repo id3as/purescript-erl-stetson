@@ -34,13 +34,13 @@ instance gDispatchConstructor ::
 class GDispatchCtor rep f where
   gDispatchC :: f -> rep -> RouteHandler
 
-instance gDispatchC0 :: GDispatchCtor NoArguments (InnerStetsonHandler Unit s) where
-  gDispatchC handler NoArguments = StetsonRoute (mkExists handler)
+instance gDispatchC0 :: GDispatchCtor NoArguments (InnerStetsonHandler x s) where
+  gDispatchC handler NoArguments = StetsonRoute (mkStetsonRoute handler)
 instance gDispatchStatic :: GDispatchCtor NoArguments StaticAssetLocation where
   gDispatchC route NoArguments = StaticRoute [] route
 
-instance gDispatchC1 :: GDispatchCtor (Argument a) (a -> (InnerStetsonHandler Unit s)) where
-  gDispatchC handler (Argument a) = StetsonRoute (mkExists (handler a))
+instance gDispatchC1 :: GDispatchCtor (Argument a) (a -> (InnerStetsonHandler x s)) where
+  gDispatchC handler (Argument a) = StetsonRoute (mkStetsonRoute (handler a))
 instance gDispatchStatic1 :: GDispatchCtor (Argument (Array String)) StaticAssetLocation where
   gDispatchC route (Argument a) = StaticRoute a route
 else instance gDispatchStatic1Ignore :: GDispatchCtor (Argument a) (a -> StaticAssetLocation) where
