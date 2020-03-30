@@ -37,6 +37,7 @@ import Erl.Cowboy.Routes as Routes
 import Erl.Data.List (List)
 import Erl.Data.Tuple (Tuple2, Tuple4)
 import Erl.ModuleName (NativeModuleName)
+import Foreign (Foreign)
 import Routing.Duplex (RouteDuplex')
 
 foreign import data HandlerArgs :: Type
@@ -133,8 +134,8 @@ type WebSocketHandler msg state = {
   , wsInit :: Maybe (WebSocketInitHandler msg state)
   , handle :: Maybe (WebSocketHandleHandler msg state)
   , info :: Maybe (WebSocketInfoHandler msg state)
+  , externalMapping :: Maybe (Foreign -> Maybe msg)
   }
-
 
 -- | For backwards compatability purposes, the default stetson handler
 -- | doesn't have a message type so it defaults to 'Unit'
@@ -153,7 +154,6 @@ data StaticAssetLocation = PrivDir String String
 data CowboyRoutePlaceholder = CowboyRoutePlaceholder
 
 newtype StetsonRouteInner a = StetsonRouteInner (Exists (InnerStetsonHandler a))
-
 
 mkStetsonRoute r = mkExists (StetsonRouteInner $ mkExists r)
 
