@@ -1,8 +1,7 @@
 module Stetson.Routing where
 
-import Prelude
+import Prelude (Unit, pure, unit, (#), ($))
 
-import Data.Exists (mkExists)
 import Data.Generic.Rep (Argument(..), Constructor(..), NoArguments(..), Product(..), Sum(..))
 import Data.Symbol (class IsSymbol, SProxy(..))
 import Prim.Row as Row
@@ -18,16 +17,16 @@ instance gDispatchSum ::
   , GDispatch b r
   ) =>
   GDispatch (Sum a b) r where
-  gDispatch r (Inl a) = gDispatch r a 
-  gDispatch r (Inr b) = gDispatch r b 
-    
+  gDispatch r (Inl a) = gDispatch r a
+  gDispatch r (Inr b) = gDispatch r b
+
 instance gDispatchConstructor ::
   ( IsSymbol sym
   , Row.Cons sym h rx r
   , GDispatchCtor c h
   ) =>
   GDispatch (Constructor sym c) r where
-    gDispatch r (Constructor rep) = gDispatchC handler rep 
+    gDispatch r (Constructor rep) = gDispatchC handler rep
       where
       handler = Record.get (SProxy :: SProxy sym) r
 
@@ -47,9 +46,9 @@ else instance gDispatchStatic1Ignore :: GDispatchCtor (Argument a) (a -> StaticA
   gDispatchC route (Argument a) = StaticRoute [] (route a)
 
 
-instance gDispatchCN :: 
+instance gDispatchCN ::
   ( GDispatchCtor right b
-  ) => 
+  ) =>
   GDispatchCtor (Product (Argument a) right) (a -> b) where
   gDispatchC handler (Product (Argument a) right) = gDispatchC (handler a) right
 
@@ -58,5 +57,5 @@ instance gDispatchCowboy :: GDispatchCtor any CowboyRoutePlaceholder where
 
 
 dummyHandler :: StetsonHandler Unit
-dummyHandler = Rest.handler (\req -> pure $ InitOk req unit) 
+dummyHandler = Rest.handler (\req -> pure $ InitOk req unit)
   # Rest

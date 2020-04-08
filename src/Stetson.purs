@@ -1,6 +1,6 @@
 -- | This is the entry point into the Stetson wrapper
 -- | You'll want to call Stetson.configure and then follow the types..
-module Stetson 
+module Stetson
   ( configure
   , cowboyRoutes
   , routes
@@ -17,7 +17,6 @@ import Prelude
 
 import Cowboy.Static as CowboyStatic
 import Data.Either (Either(..))
-import Data.Exists (mkExists, runExists)
 import Data.Generic.Rep (class Generic, NoArguments, from)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
@@ -33,7 +32,7 @@ import Erl.Data.Map (Map)
 import Erl.Data.Map as Map
 import Erl.Data.Tuple (tuple2, tuple3, tuple4)
 import Erl.ModuleName (NativeModuleName(..), nativeModuleName)
-import Foreign (Foreign, unsafeToForeign)
+import Foreign (unsafeToForeign)
 import Routing.Duplex (RouteDuplex', root)
 import Routing.Duplex.Generic (noArgs)
 import RoutingDuplexMiddleware (UnmatchedHandler(..))
@@ -68,9 +67,9 @@ routes :: forall a b rep r.
   RouteDuplex' a -> { | r } -> StetsonConfig b -> StetsonConfig a
 routes routing d config = config { routing = routing, dispatch = dispatchTable d }
   where
-  dispatchTable :: 
+  dispatchTable ::
     { | r } -> a -> RouteHandler
-  dispatchTable r a = gDispatch r (from a) 
+  dispatchTable r a = gDispatch r (from a)
 -- route value (WebSocket handler) config@{ routes } =
 --   (config { routes = (Stetson { route: value
 --                               , moduleName: (nativeModuleName ModuleNames.stetsonWebSocketHandler)
@@ -80,7 +79,7 @@ routes routing d config = config { routing = routing, dispatch = dispatchTable d
 
 -- | Introduce a list of native Erlang cowboy handlers to this config
 cowboyRoutes :: forall a. List Path -> StetsonConfig a -> StetsonConfig a
-cowboyRoutes newRoutes config@{ cowboyRoutes: existingRoutes } = 
+cowboyRoutes newRoutes config@{ cowboyRoutes: existingRoutes } =
   (config { cowboyRoutes = reverse newRoutes <> existingRoutes })
 
 -- | Set the port that this http listener will listen to
@@ -121,16 +120,16 @@ startClear name config@{ bindAddress, bindPort, streamHandlers: streamHandlers_,
                 then Default
                 else CowboyRouterFallback
 
-  mapping req route = 
+  mapping req route =
     case config.dispatch route of
       StetsonRoute inner -> runStetsonRoute (mapRoute req) inner
-        
-      StaticRoute pathSegments (PrivDir app dir) -> 
+
+      StaticRoute pathSegments (PrivDir app dir) ->
         let req' = Map.insert (atom "path_info") (List.fromFoldable pathSegments) (unsafeCoerce req :: Map Atom (List String))
         in tuple2 (unsafeCoerce req' :: Req) $ Right
         { mod: CowboyStatic.moduleName
         , args: unsafeToForeign $ tuple3 (atom "priv_dir") (atom app) dir
-        } 
+        }
       StaticRoute _ (PrivFile app file) -> tuple2 req $ Right
         { mod: CowboyStatic.moduleName
         , args: unsafeToForeign $ tuple3 (atom "priv_file") (atom app) file
@@ -142,7 +141,7 @@ startClear name config@{ bindAddress, bindPort, streamHandlers: streamHandlers_,
     Rest handler -> tuple2 req $ Right
         { mod: nativeModuleName ModuleNames.stetsonRestHandler
         , args: unsafeToForeign handler
-        } 
+        }
     WebSocket handler -> tuple2 req $ Right
         { mod: nativeModuleName ModuleNames.stetsonWebSocketHandler
         , args: unsafeToForeign handler

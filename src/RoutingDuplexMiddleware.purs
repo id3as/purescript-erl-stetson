@@ -60,7 +60,7 @@ execute req env = unsafePerformEffect $ do
             case dispatched of
               Left unmatched -> handleUnmatched unmatched
               Right matched ->
-                let env' = updateEnv matched env
+                let env' = updateEnv matched
                 in pure $ okResult req' env'
         Left err -> handleUnmatched $ unmatched err
   where
@@ -69,13 +69,13 @@ execute req env = unsafePerformEffect $ do
         Default -> do
           req' <- Req.replyStatus (StatusCode 404) req
           pure $ stopResult req'
-        DefaultHandler handler -> 
-          let env' = updateEnv handler env
+        DefaultHandler handler ->
+          let env' = updateEnv handler
           in pure $ okResult req env'
         CowboyRouterFallback ->
           cowboyRouterExecute req env
 
-    updateEnv { mod, args } env = 
-      Map.insert (atom "handler") (unsafeToForeign mod) 
+    updateEnv { mod, args } =
+      Map.insert (atom "handler") (unsafeToForeign mod)
       $ Map.insert (atom "handler_opts") args
       $ env

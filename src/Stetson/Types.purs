@@ -155,6 +155,7 @@ data CowboyRoutePlaceholder = CowboyRoutePlaceholder
 
 newtype StetsonRouteInner a = StetsonRouteInner (Exists (InnerStetsonHandler a))
 
+mkStetsonRoute :: forall msg state. InnerStetsonHandler msg state -> Exists StetsonRouteInner
 mkStetsonRoute r = mkExists (StetsonRouteInner $ mkExists r)
 
 runStetsonRoute :: forall z. (forall b c. InnerStetsonHandler b c -> z) -> Exists StetsonRouteInner -> z
