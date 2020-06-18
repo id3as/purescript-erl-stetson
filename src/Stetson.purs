@@ -1,6 +1,6 @@
 -- | This is the entry point into the Stetson wrapper
 -- | You'll want to call Stetson.configure and then follow the types..
-module Stetson 
+module Stetson
   ( configure
   , cowboyRoutes
   , routes
@@ -9,6 +9,7 @@ module Stetson
   , streamHandlers
   , middlewares
   , startClear
+  , stop
   , module Stetson.Types
   )
   where
@@ -68,9 +69,9 @@ routes :: forall a b rep r.
   RouteDuplex' a -> { | r } -> StetsonConfig b -> StetsonConfig a
 routes routing d config = config { routing = routing, dispatch = dispatchTable d }
   where
-  dispatchTable :: 
+  dispatchTable ::
     { | r } -> a -> RouteHandler
-  dispatchTable r a = gDispatch r (from a) 
+  dispatchTable r a = gDispatch r (from a)
 -- route value (WebSocket handler) config@{ routes } =
 --   (config { routes = (Stetson { route: value
 --                               , moduleName: (nativeModuleName ModuleNames.stetsonWebSocketHandler)
@@ -80,7 +81,7 @@ routes routing d config = config { routing = routing, dispatch = dispatchTable d
 
 -- | Introduce a list of native Erlang cowboy handlers to this config
 cowboyRoutes :: forall a. List Path -> StetsonConfig a -> StetsonConfig a
-cowboyRoutes newRoutes config@{ cowboyRoutes: existingRoutes } = 
+cowboyRoutes newRoutes config@{ cowboyRoutes: existingRoutes } =
   (config { cowboyRoutes = reverse newRoutes <> existingRoutes })
 
 -- | Set the port that this http listener will listen to
@@ -104,7 +105,7 @@ middlewares mws config =
   (config { middlewares = Just mws })
 
 -- | Start the listener with the specified name
-startClear :: forall a. String -> StetsonConfig a -> Effect Unit
+startClear :: forall a. String -> StetsonConfig a -> Effect (Either Foreign Unit)
 startClear name config@{ bindAddress, bindPort, streamHandlers: streamHandlers_, middlewares: middlewares_, cowboyRoutes: cowboyRoutes' } = do
   let dispatch = Routes.compile $ singleton $ Routes.anyHost $ reverse cowboyRoutes'
       transOpts = Ip bindAddress : Port bindPort : nil
@@ -114,23 +115,22 @@ startClear name config@{ bindAddress, bindPort, streamHandlers: streamHandlers_,
                         ))
         <> List.fromFoldable (StreamHandlers <$> streamHandlers_)
         <> List.fromFoldable (Middlewares <$> middlewares_)
-  _ <- Cowboy.startClear (atom name) transOpts protoOpts
-  pure unit
+  Cowboy.startClear (atom name) transOpts protoOpts
   where
   unmatched _ = if null cowboyRoutes'
                 then Default
                 else CowboyRouterFallback
 
-  mapping req route = 
+  mapping req route =
     case config.dispatch route of
       StetsonRoute inner -> runStetsonRoute (mapRoute req) inner
-        
-      StaticRoute pathSegments (PrivDir app dir) -> 
+
+      StaticRoute pathSegments (PrivDir app dir) ->
         let req' = Map.insert (atom "path_info") (List.fromFoldable pathSegments) (unsafeCoerce req :: Map Atom (List String))
         in tuple2 (unsafeCoerce req' :: Req) $ Right
         { mod: CowboyStatic.moduleName
         , args: unsafeToForeign $ tuple3 (atom "priv_dir") (atom app) dir
-        } 
+        }
       StaticRoute _ (PrivFile app file) -> tuple2 req $ Right
         { mod: CowboyStatic.moduleName
         , args: unsafeToForeign $ tuple3 (atom "priv_file") (atom app) file
@@ -142,8 +142,12 @@ startClear name config@{ bindAddress, bindPort, streamHandlers: streamHandlers_,
     Rest handler -> tuple2 req $ Right
         { mod: nativeModuleName ModuleNames.stetsonRestHandler
         , args: unsafeToForeign handler
-        } 
+        }
     WebSocket handler -> tuple2 req $ Right
         { mod: nativeModuleName ModuleNames.stetsonWebSocketHandler
         , args: unsafeToForeign handler
         }
+
+stop :: String -> Effect Unit
+stop name =
+  Cowboy.stopListener (atom name)
