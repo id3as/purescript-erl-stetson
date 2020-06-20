@@ -3,8 +3,6 @@ module Stetson.Types ( RestResult(..)
                , InitHandler
                , AcceptHandler
                , ProvideHandler
-               , RestHandler
-               , WebSocketHandler
                , WebSocketInitHandler
                , WebSocketInfoHandler
                , WebSocketHandleHandler
@@ -13,22 +11,25 @@ module Stetson.Types ( RestResult(..)
                , HttpMethod(..)
                , Authorized(..)
                , StetsonHandler(..)
+               , StetsonHandlerCallbacks(..)
                , InnerStetsonHandler(..)
-               , ReceivingStetsonHandler(..)
                , StaticAssetLocation(..)
                , CowboyRoutePlaceholder(..)
                , HandlerArgs
                , StetsonConfig
                , RouteHandler(..)
                , StetsonRouteInner
+               , RestHandler
+               , ReceivingStetsonHandler
                , mkStetsonRoute
                , runStetsonRoute
+               , emptyHandler
                ) where
 
 import Prelude
 
 import Data.Exists (mkExists, runExists, Exists)
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Erl.Cowboy.Handlers.Rest (MovedResult)
 import Erl.Cowboy.Handlers.WebSocket (Frame)
@@ -52,14 +53,14 @@ foreign import data HandlerArgs :: Type
 -- The exception is cowboy_req, as that's pretty universal across handlers and isn't too ridiculous to talk to directly
 -- We could go with our own req module, but that would probably just end up being 1:1 to cowboy req anyway so who needs that extra work
 
-
 -- | The return type of most of the callbacks invoked as part of the REST workflow
 data RestResult reply state
   = RestOk reply Req state
   | RestStop Req state
 
 -- | The return type of the 'init' callback in the REST workflow
-data InitResult state = InitOk Req state
+data InitResult state =   Rest Req state 
+                        | WebSocket Req state
 
 -- | The callback invoked to kick off the REST workflow
 type InitHandler state = Req -> Effect (InitResult state)
@@ -70,9 +71,13 @@ type AcceptHandler state = Req -> state -> Effect (RestResult Boolean state)
 -- | A callback invoked to 'provide' a specific content type
 type ProvideHandler state = Req -> state -> Effect (RestResult String state)
 
--- | A builder containing the complete set of callbacks during the rest workflow for a specific handler
-type RestHandler state = {
+-- | A builder containing the complete set of callbacks for any sort of request
+type StetsonHandlerCallbacks msg state = {
+
+  -- Shared
     init :: Req -> Effect (InitResult state)
+
+  -- Rest
   , allowedMethods :: Maybe (Req -> state -> Effect (RestResult (List HttpMethod) state))
   , resourceExists :: Maybe (Req -> state -> Effect (RestResult Boolean state))
   , malformedRequest :: Maybe (Req -> state -> Effect (RestResult Boolean state))
@@ -87,6 +92,16 @@ type RestHandler state = {
   , previouslyExisted :: Maybe (Req -> state -> Effect (RestResult Boolean state))
   , forbidden :: Maybe (Req -> state -> Effect (RestResult Boolean state))
   , isConflict :: Maybe (Req -> state -> Effect (RestResult Boolean state))
+
+  -- WebSocket
+  , wsInit :: Maybe (WebSocketInitHandler msg state)
+
+  -- Shared for anything receiving messages from client or erlang
+  , handle :: Maybe (WebSocketHandleHandler msg state)
+  , info :: Maybe (WebSocketInfoHandler msg state)
+
+  --  Shared for anything needing to map messages
+  , externalMapping :: Maybe (Foreign -> Maybe msg)
   }
 
 -- | or is it a verb
@@ -127,31 +142,23 @@ type WebSocketHandleHandler msg state = Frame -> state -> Effect (WebSocketCallR
 -- | Callback used to handle messages sent from Erlang (hopefully via the router) so they'll be of the right type
 type WebSocketInfoHandler msg state = msg -> state -> Effect (WebSocketCallResult state)
 
-
--- | Builder representing the complete list of callbacks for a WebSocket handler (okay not complete, feel free to add)
-type WebSocketHandler msg state = {
-    init :: InitHandler state
-  , wsInit :: Maybe (WebSocketInitHandler msg state)
-  , handle :: Maybe (WebSocketHandleHandler msg state)
-  , info :: Maybe (WebSocketInfoHandler msg state)
-  , externalMapping :: Maybe (Foreign -> Maybe msg)
-  }
-
--- | For backwards compatability purposes, the default stetson handler
--- | doesn't have a message type so it defaults to 'Unit'
-type StetsonHandler state = InnerStetsonHandler Unit state
-
--- | A Stetson handler that can receive messages of type 'msg'
-type ReceivingStetsonHandler msg state = InnerStetsonHandler msg state
-
--- | The actual type used to collect together handlers internally
-data InnerStetsonHandler msg state = Rest (RestHandler state)
-                                   | WebSocket (WebSocketHandler msg state)
-
 data StaticAssetLocation = PrivDir String String
                          | PrivFile String String
 
 data CowboyRoutePlaceholder = CowboyRoutePlaceholder
+
+
+-- | The actual type used to collect together handlers internally
+data InnerStetsonHandler msg state = Complete (StetsonHandlerCallbacks msg state)
+
+-- | This type no longer needs to exist and is only here to serve code that used the old API
+type ReceivingStetsonHandler msg state = InnerStetsonHandler msg state
+
+-- | This type no longer needs to exist and is only heree to serve code that used the old API
+type StetsonHandler state = InnerStetsonHandler Unit state
+
+-- | This type no longer needs to exist and is only here to serve code that used the old API
+type RestHandler state = StetsonHandlerCallbacks Unit state
 
 newtype StetsonRouteInner a = StetsonRouteInner (Exists (InnerStetsonHandler a))
 
@@ -178,4 +185,27 @@ type StetsonConfig a =
   , cowboyRoutes :: List Routes.Path
   , routing :: RouteDuplex' a
   , dispatch :: a -> RouteHandler
+  }
+
+emptyHandler :: forall msg state. InitHandler state -> StetsonHandlerCallbacks msg state
+emptyHandler init = 
+  { init                 : init
+  , allowedMethods       : Nothing
+  , malformedRequest     : Nothing
+  , resourceExists       : Nothing
+  , contentTypesAccepted : Nothing
+  , contentTypesProvided : Nothing
+  , deleteResource       : Nothing
+  , isAuthorized         : Nothing
+  , isConflict           : Nothing
+  , movedTemporarily     : Nothing
+  , movedPermanently     : Nothing
+  , serviceAvailable     : Nothing
+  , previouslyExisted    : Nothing
+  , allowMissingPost     : Nothing
+  , forbidden            : Nothing
+  , wsInit               : Nothing
+  , handle               : Nothing
+  , info                 : Nothing
+  , externalMapping      : Nothing
   }

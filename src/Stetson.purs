@@ -41,7 +41,7 @@ import RoutingDuplexMiddleware as RoutingMiddleware
 import Stetson.ModuleNames as ModuleNames
 import Stetson.Routing (class GDispatch, gDispatch)
 import Stetson.Routing as Routing
-import Stetson.Types (AcceptHandler, Authorized(..), HandlerArgs, HttpMethod(..), InitHandler, InitResult(..), InnerStetsonHandler(..), ProvideHandler, ReceivingStetsonHandler, RestHandler, RestResult(..), RouteHandler(..), StaticAssetLocation(..), StetsonConfig, StetsonHandler, WebSocketCallResult(..), WebSocketHandleHandler, WebSocketHandler, WebSocketInfoHandler, WebSocketInitHandler, WebSocketMessageRouter, runStetsonRoute, mkStetsonRoute)
+import Stetson.Types (AcceptHandler, Authorized(..), HandlerArgs, HttpMethod(..), InitHandler, InitResult(..), InnerStetsonHandler(..), ProvideHandler, RestResult(..), RouteHandler(..), StaticAssetLocation(..), StetsonConfig, StetsonHandler, WebSocketCallResult(..), WebSocketHandleHandler, WebSocketInfoHandler, WebSocketInitHandler, WebSocketMessageRouter, runStetsonRoute, mkStetsonRoute, ReceivingStetsonHandler, RestHandler)
 import Unsafe.Coerce (unsafeCoerce)
 
 -- | Creates a blank stetson config with default settings and no routes
@@ -139,11 +139,8 @@ startClear name config@{ bindAddress, bindPort, streamHandlers: streamHandlers_,
 
   mapRoute :: forall b c. _ -> InnerStetsonHandler b c -> _
   mapRoute req = case _ of
-    Rest handler -> tuple2 req $ Right
-        { mod: nativeModuleName ModuleNames.stetsonRestHandler
+    Complete handler -> tuple2 req $ Right
+        { mod: nativeModuleName ModuleNames.stetsonHandlerProxy
         , args: unsafeToForeign handler
         } 
-    WebSocket handler -> tuple2 req $ Right
-        { mod: nativeModuleName ModuleNames.stetsonWebSocketHandler
-        , args: unsafeToForeign handler
-        }
+

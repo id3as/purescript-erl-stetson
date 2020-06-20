@@ -56,7 +56,6 @@ instance gDispatchCN ::
 instance gDispatchCowboy :: GDispatchCtor any CowboyRoutePlaceholder where
   gDispatchC route anything = CowboyRouteFallthrough
 
-
-dummyHandler :: StetsonHandler Unit
-dummyHandler = Rest.handler (\req -> pure $ InitOk req unit) 
-  # Rest
+dummyHandler :: InnerStetsonHandler Unit Unit
+dummyHandler = Rest.handler (\req -> pure $ Rest req unit)
+            #  Rest.yeeha

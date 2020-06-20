@@ -8,8 +8,8 @@ stetsonModuleNames = ModuleName "Stetson.ModuleNames"
 stetsonRest :: ModuleName
 stetsonRest = ModuleName "Stetson.Rest"
 
-stetsonRestHandler :: ModuleName
-stetsonRestHandler = ModuleName "Stetson.RestHandler"
+stetsonHandlerProxy :: ModuleName
+stetsonHandlerProxy = ModuleName "Stetson.HandlerProxy"
 
 stetsonRouting :: ModuleName
 stetsonRouting = ModuleName "Stetson.Routing"
