@@ -1,4 +1,4 @@
--module(stetson_handlerProxy).
+-module(stetson_handlerProxy@foreign).
 
 -export([self/0
        , restInitResult/2
