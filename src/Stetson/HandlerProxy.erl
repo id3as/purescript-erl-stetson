@@ -2,6 +2,7 @@
 
 -export([self/0
        , restInitResult/2
+       , loopInitResult/2
        , wsInitResult/2
         ]).
 
@@ -12,3 +13,6 @@ restInitResult(State, Req) ->
 
 wsInitResult(State, Req) ->
   {cowboy_websocket, Req, State}.
+
+loopInitResult(State, Req) ->
+  {cowboy_loop, Req, State}.

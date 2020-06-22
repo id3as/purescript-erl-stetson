@@ -153,7 +153,8 @@ preHook' hook state =
 
   -- TODO: These
   , wsInit               : state.wsInit
-  , handle               : state.handle
-  , info                 : state.info
-  , externalMapping      : state.externalMapping
+  , wsHandle             : state.wsHandle
+  , wsInfo               : state.wsInfo
+  , loopInfo             : state.loopInfo
+  , loopInit             : state.loopInit
   }

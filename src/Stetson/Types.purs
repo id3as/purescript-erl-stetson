@@ -21,6 +21,10 @@ module Stetson.Types ( RestResult(..)
                , StetsonRouteInner
                , RestHandler
                , CowboyHandler(..)
+               , LoopInitHandler(..)
+               , LoopMessageRouter(..)
+               , LoopInfoHandler(..)
+               , LoopCallResult(..)
                , ReceivingStetsonHandler
                , mkStetsonRoute
                , runStetsonRoute
@@ -69,6 +73,7 @@ data RestResult reply state
 -- | The return type of the 'init' callback in the REST workflow
 data InitResult state =   Rest Req state 
                         | WebSocket Req state
+                        | Loop Req state
 
 -- | The callback invoked to kick off the REST workflow
 type InitHandler state = Req -> Effect (InitResult state)
@@ -103,13 +108,12 @@ type StetsonHandlerCallbacks msg state = {
 
   -- WebSocket
   , wsInit :: Maybe (WebSocketInitHandler msg state)
+  , wsHandle :: Maybe (WebSocketHandleHandler msg state)
+  , wsInfo :: Maybe (WebSocketInfoHandler msg state)
 
-  -- Shared for anything receiving messages from client or erlang
-  , handle :: Maybe (WebSocketHandleHandler msg state)
-  , info :: Maybe (WebSocketInfoHandler msg state)
-
-  --  Shared for anything needing to map messages
-  , externalMapping :: Maybe (Foreign -> Maybe msg)
+  -- Loop
+  , loopInfo :: Maybe (LoopInfoHandler msg state)
+  , loopInit :: Maybe  (LoopInitHandler msg state)
   }
 
 -- | or is it a verb
@@ -149,6 +153,23 @@ type WebSocketHandleHandler msg state = Frame -> state -> Effect (WebSocketCallR
 
 -- | Callback used to handle messages sent from Erlang (hopefully via the router) so they'll be of the right type
 type WebSocketInfoHandler msg state = msg -> state -> Effect (WebSocketCallResult state)
+
+-- | Return type of most Loop callbacks
+data LoopCallResult state = LoopOk Req state
+                          | LoopHibernate Req state
+                          | LoopStop Req state
+
+-- | Router used to generate messages of the right type that'll appear
+-- | in the info callback of a Loop handler
+type LoopMessageRouter msg = (msg -> Effect Unit)
+
+-- | Callback used to kick off the Loop handler, it is here where subscriptions should be
+-- | created, and in their callbacks the messages should be passed into the router for dealing with in the info callback
+type LoopInitHandler msg state = LoopMessageRouter msg -> Req -> state -> Effect state
+
+-- | Callback used to handle messages sent from Erlang (hopefully via the router) so they'll be of the right type
+type LoopInfoHandler msg state = msg -> Req -> state -> Effect (LoopCallResult state)
+
 
 data StaticAssetLocation = PrivDir String String
                          | PrivFile String String
@@ -213,7 +234,8 @@ emptyHandler init =
   , allowMissingPost     : Nothing
   , forbidden            : Nothing
   , wsInit               : Nothing
-  , handle               : Nothing
-  , info                 : Nothing
-  , externalMapping      : Nothing
+  , wsHandle             : Nothing
+  , wsInfo               : Nothing
+  , loopInit             : Nothing
+  , loopInfo             : Nothing
   }

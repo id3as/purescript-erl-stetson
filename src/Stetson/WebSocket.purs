@@ -16,15 +16,11 @@ init fn h = h { wsInit = Just fn }
 
 handle :: forall msg state.  WebSocketHandleHandler msg state -> StetsonHandlerCallbacks msg state -> StetsonHandlerCallbacks msg state
 handle fn h =
-  h { handle = Just fn  }
+  h { wsHandle = Just fn  }
 
 info :: forall msg state.  WebSocketInfoHandler msg state -> StetsonHandlerCallbacks msg state -> StetsonHandlerCallbacks msg state
 info fn h =
-  h { info = Just fn  }
-
-externalMapping :: forall msg state. (Foreign -> Maybe msg) -> StetsonHandlerCallbacks msg state -> StetsonHandlerCallbacks msg state
-externalMapping fn h =
-  h { externalMapping = Just fn }
+  h { wsInfo = Just fn  }
 
 yeeha :: forall msg state. StetsonHandlerCallbacks msg state -> InnerStetsonHandler msg state
 yeeha = Complete

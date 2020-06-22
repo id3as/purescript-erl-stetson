@@ -5,7 +5,7 @@ import Prelude
 import Data.Compactable (applyMaybe)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Effect (Effect)
-import Effect.Uncurried (mkEffectFn1, mkEffectFn2)
+import Effect.Uncurried (mkEffectFn1, mkEffectFn2, mkEffectFn3)
 import Erl.Process.Raw (Pid, send)
 import Foreign (Foreign)
 import Stetson (InitResult(..), WebSocketCallResult(..))
@@ -18,17 +18,19 @@ import Erl.Cowboy.Handlers.Rest (RestResult, restResult, stop, switchHandler) as
 import Erl.Cowboy.Req (Req)
 import Erl.Data.List (List, mapWithIndex, nil, (!!))
 import Erl.Data.Tuple (tuple2, uncurry2)
-import Stetson.Types (Authorized(..), InitResult(..), StetsonHandlerCallbacks(..), RestResult(..), InitHandler, CowboyHandler(..))
+import Stetson.Types (Authorized(..), InitResult(..), StetsonHandlerCallbacks(..), RestResult(..), InitHandler, CowboyHandler(..), LoopCallResult(..), LoopInitHandler(..))
 import Erl.ModuleName (NativeModuleName(..))
 import Unsafe.Coerce (unsafeCoerce)
 
 import Erl.Cowboy.Handlers.WebSocket as CowboyWS
+import Erl.Cowboy.Handlers.Loop as CowboyLoop
 import Erl.Cowboy.Handlers.Rest as CowboyRest
 
 foreign import self :: Effect Pid
 foreign import data ElidedInitResult :: Type
-foreign import restInitResult :: forall state. state -> Req ->  ElidedInitResult
-foreign import wsInitResult :: forall state. state -> Req ->  ElidedInitResult
+foreign import restInitResult :: forall msg state. State msg state -> Req ->  ElidedInitResult
+foreign import wsInitResult :: forall msg state. State msg state -> Req ->  ElidedInitResult
+foreign import loopInitResult :: forall msg state. State msg state -> Req ->  ElidedInitResult
 
 type State msg state =
   { handler :: StetsonHandlerCallbacks msg state
@@ -45,6 +47,9 @@ init = mkEffectFn2 \req handler -> do
   case  res of
        (Rest req2 innerState) -> pure $ restInitResult { handler, innerState, acceptHandlers: nil, provideHandlers: nil } req
        (WebSocket req2 innerState) ->  pure $ wsInitResult { handler, innerState, acceptHandlers: nil, provideHandlers: nil } req
+       (Loop req2 innerState) -> do
+         innerState2 <- applyLoopInit handler req innerState
+         pure $ loopInitResult { handler, innerState: innerState2, acceptHandlers: nil, provideHandlers: nil } req
 
 --
 -- Rest handler
@@ -113,11 +118,7 @@ content_types_accepted = mkEffectFn2 \req state@{ handler, innerState } ->
        Just factory -> do
           factoryResp <- factory req innerState
           case factoryResp of
-            RestSwitch handler rq st -> pure $ Cowboy.switchHandler ((NativeModuleName <<< atom) $ case handler of
-                                                                                   RestHandler -> "cowboy_rest"
-                                                                                   LoopHandler -> "cowboy_loop"
-                                                                                   WebSocketHandler -> "cowboy_websocket") 
-                                                            (state { innerState = st }) rq
+            RestSwitch handler rq st -> switchHandler handler rq (state { innerState = st })
             RestOk callbacks req2 innerState2 ->
               let
                 fns = map (\tuple -> uncurry2 (\ct fn -> fn) tuple) callbacks
@@ -136,11 +137,7 @@ content_types_provided = mkEffectFn2 \req state@{ handler, innerState } ->
        Just factory -> do
           factoryResp <- factory req innerState
           case factoryResp of
-            RestSwitch handler rq st -> pure $ Cowboy.switchHandler ((NativeModuleName <<< atom) $ case handler of
-                                                                                   RestHandler -> "cowboy_rest"
-                                                                                   LoopHandler -> "cowboy_loop"
-                                                                                   WebSocketHandler -> "cowboy_websocket") 
-                                                            (state { innerState = st }) rq
+            RestSwitch handler rq st -> switchHandler handler rq (state { innerState = st })
             RestOk callbacks req2 innerState2 ->
               let
                 fns = map (\tuple -> uncurry2 (\ct fn -> fn) tuple) callbacks
@@ -168,11 +165,7 @@ restResult :: forall reply msg state. State msg state -> Maybe (Effect (RestResu
 restResult outerState (Just callback) = do
   result <- callback
   case result of
-    RestSwitch handler rq st -> pure $ Cowboy.switchHandler ((NativeModuleName <<< atom) $ case handler of
-                                                                                   RestHandler -> "cowboy_rest"
-                                                                                   LoopHandler -> "cowboy_loop"
-                                                                                   WebSocketHandler -> "cowboy_websocket") 
-                                                            (outerState { innerState = st }) rq
+    RestSwitch handler rq st -> switchHandler handler rq (outerState { innerState = st })
     RestOk re rq st -> pure $ Cowboy.restResult re (outerState { innerState = st }) rq
     RestStop rq st ->
       do
@@ -247,7 +240,7 @@ websocket_init = mkEffectFn1 \state -> do
   case state of
     { innerState, handler: { wsInit: Just wsInit }} -> do
       pid <- self
-      transformResult state =<< wsInit (router pid) innerState
+      transformWsResult state =<< wsInit (router pid) innerState
     _ ->
       pure $ CowboyWS.okResult state
 
@@ -259,28 +252,65 @@ router pid msg = do
 websocket_handle :: forall msg state. CowboyWS.FrameHandler (State msg state)
 websocket_handle = mkEffectFn2 \frame state ->
   case state of
-    { innerState, handler: { handle: Just handle }} ->
-      transformResult state =<< handle (CowboyWS.decodeInFrame frame) innerState
+    { innerState, handler: { wsHandle: Just handle }} ->
+      transformWsResult state =<< handle (CowboyWS.decodeInFrame frame) innerState
     _ ->
       pure $ CowboyWS.okResult state
 
-websocket_info :: forall msg state. CowboyWS.InfoHandler Foreign (State msg state)
-websocket_info = mkEffectFn2 \foreignMsg state ->
+websocket_info :: forall msg state. CowboyWS.InfoHandler msg (State msg state)
+websocket_info = mkEffectFn2 \msg state ->
   case state of
-    { innerState, handler: { info: Just info
-                           , externalMapping: maybeExternalMapping }} ->
-      let
-        mappedMsg = fromMaybe (unsafeCoerce foreignMsg) $ applyMaybe maybeExternalMapping (Just foreignMsg)
-      in
-        transformResult state =<< info mappedMsg innerState
+    { innerState, handler: { wsInfo: Just info }} ->
+        transformWsResult state =<< info msg innerState
     _ ->
       pure $ CowboyWS.okResult state
 
-transformResult :: forall msg state. State msg state -> WebSocketCallResult state -> Effect (CowboyWS.CallResult (State msg state))
-transformResult state result =
+transformWsResult :: forall msg state. State msg state -> WebSocketCallResult state -> Effect (CowboyWS.CallResult (State msg state))
+transformWsResult state result =
   case result of
        NoReply innerState -> pure $ CowboyWS.okResult $ state { innerState = innerState  }
        Hibernate innerState -> pure $ CowboyWS.hibernateResult $ state { innerState = innerState }
        Reply frames innerState ->  pure $ CowboyWS.replyResult  state { innerState = innerState }$ map CowboyWS.outFrame frames
        ReplyAndHibernate frames innerState -> pure $ CowboyWS.replyAndHibernateResult state { innerState = innerState } $ map CowboyWS.outFrame frames
        Stop innerState -> pure $ CowboyWS.stopResult state { innerState = innerState }
+
+
+---
+--- Loop handler
+---
+
+
+info :: forall msg state. CowboyLoop.InfoHandler msg (State msg state)
+info = mkEffectFn3 \msg req state ->
+  case state of
+    { innerState, handler: { loopInfo: Just info }} ->
+        transformLoopResult state =<< info msg req innerState
+    _ ->
+      pure $ CowboyLoop.continue state req
+
+transformLoopResult :: forall msg state. State msg state -> LoopCallResult state -> Effect (CowboyLoop.InfoResult (State msg state))
+transformLoopResult state result =
+  case result of
+       LoopOk req innerState -> pure $ CowboyLoop.continue state { innerState = innerState  } req
+       LoopHibernate req innerState -> pure $ CowboyLoop.continueHibernate state { innerState = innerState } req
+       LoopStop req innerState ->  pure $ CowboyLoop.stop state { innerState = innerState } req
+
+applyLoopInit :: forall msg state. StetsonHandlerCallbacks msg state -> Req -> state -> Effect state
+applyLoopInit { loopInit: Nothing } req state = pure state
+applyLoopInit { loopInit: Just loopInit } req state = do
+  pid <- self
+  loopInit (router pid) req state
+
+
+
+---
+--- Switching
+---
+switchHandler :: forall reply msg state. CowboyHandler -> Req -> State msg state -> Effect (Cowboy.RestResult reply (State msg state))
+switchHandler RestHandler req state@{ innerState } = 
+  pure $ Cowboy.switchHandler (NativeModuleName $ atom "cowboy_rest") state req
+switchHandler WebSocketHandler req state@{ innerState } = 
+  pure $ Cowboy.switchHandler (NativeModuleName $ atom "cowboy_websocket") state req
+switchHandler LoopHandler req state@{ innerState, handler } = do
+  innerState2 <- applyLoopInit handler req innerState
+  pure $ Cowboy.switchHandler (NativeModuleName $ atom "cowboy_loop") (state { innerState = innerState2 }) req
