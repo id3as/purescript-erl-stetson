@@ -43,8 +43,8 @@ init :: forall msg state. EffectFn2 Req (StetsonHandlerCallbacks msg state) Elid
 init = mkEffectFn2 \req handler -> do
   res <- handler.init req
   case  res of
-       (Rest req2 innerState) -> pure $ restInitResult { handler, innerState } req
-       (WebSocket req2 innerState) ->  pure $ wsInitResult { handler, innerState } req
+       (Rest req2 innerState) -> pure $ restInitResult { handler, innerState, acceptHandlers: nil, provideHandlers: nil } req
+       (WebSocket req2 innerState) ->  pure $ wsInitResult { handler, innerState, acceptHandlers: nil, provideHandlers: nil } req
 
 --
 -- Rest handler
