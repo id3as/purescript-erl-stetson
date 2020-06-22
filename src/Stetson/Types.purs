@@ -20,6 +20,7 @@ module Stetson.Types ( RestResult(..)
                , RouteHandler(..)
                , StetsonRouteInner
                , RestHandler
+               , CowboyHandler(..)
                , ReceivingStetsonHandler
                , mkStetsonRoute
                , runStetsonRoute
@@ -53,10 +54,17 @@ foreign import data HandlerArgs :: Type
 -- The exception is cowboy_req, as that's pretty universal across handlers and isn't too ridiculous to talk to directly
 -- We could go with our own req module, but that would probably just end up being 1:1 to cowboy req anyway so who needs that extra work
 
+-- | The different handlers exposed by Cowboy and loosely mapping onto the 
+-- | Rest/Loop/WebSocket namespaces
+data CowboyHandler = RestHandler 
+                   | LoopHandler 
+                   | WebSocketHandler
+
 -- | The return type of most of the callbacks invoked as part of the REST workflow
 data RestResult reply state
   = RestOk reply Req state
   | RestStop Req state
+  | RestSwitch CowboyHandler Req state
 
 -- | The return type of the 'init' callback in the REST workflow
 data InitResult state =   Rest Req state 

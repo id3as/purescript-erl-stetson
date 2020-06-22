@@ -15,6 +15,7 @@ module Stetson.Rest ( handler
                     , movedPermanently
                     , serviceAvailable
                     , previouslyExisted
+                    , switchHandler
                     , forbidden
                     , initResult
                     , result
@@ -29,11 +30,11 @@ import Prelude
 
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import Erl.Cowboy.Handlers.Rest (MovedResult)
+import Erl.Cowboy.Handlers.Rest (MovedResult, switchHandler)
 import Erl.Cowboy.Req (Req)
 import Erl.Data.List (List)
 import Erl.Data.Tuple (Tuple2)
-import Stetson.Types (AcceptHandler, Authorized, HttpMethod, InitHandler, InitResult(..), ProvideHandler, StetsonHandlerCallbacks, RestResult(..), StetsonHandlerCallbacks(..), InnerStetsonHandler(..), emptyHandler)
+import Stetson.Types (AcceptHandler, Authorized, CowboyHandler, HttpMethod, InitHandler, InitResult(..), InnerStetsonHandler(..), ProvideHandler, RestResult(..), StetsonHandlerCallbacks, StetsonHandlerCallbacks(..), emptyHandler)
 
 -- | Create a cowboy REST handler with the provided Init handler and no callbacks defined
 handler :: forall state. InitHandler state -> StetsonHandlerCallbacks Unit state
@@ -102,6 +103,10 @@ initResult rq st = pure $ Rest rq st
 -- | Create a rest response for return from a rest callback
 result :: forall reply state. reply -> Req -> state -> Effect (RestResult reply state)
 result re rq st = pure $ RestOk re rq st
+
+-- | Switches to a different handler (probably cowboy_loop)
+switchHandler :: forall reply state. CowboyHandler -> Req -> state -> Effect (RestResult reply state)
+switchHandler handler rq st = pure $ RestSwitch handler rq st
 
 -- | Create a rest stop response for return from a rest callback
 stop :: forall reply state. Req -> state -> Effect (RestResult reply state)

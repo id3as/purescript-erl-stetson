@@ -14,11 +14,12 @@ import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Uncurried (EffectFn2, mkEffectFn2)
 import Erl.Atom (atom)
-import Erl.Cowboy.Handlers.Rest (RestResult, restResult, stop) as Cowboy
+import Erl.Cowboy.Handlers.Rest (RestResult, restResult, stop, switchHandler) as Cowboy
 import Erl.Cowboy.Req (Req)
 import Erl.Data.List (List, mapWithIndex, nil, (!!))
 import Erl.Data.Tuple (tuple2, uncurry2)
-import Stetson.Types (Authorized(..), InitResult(..), StetsonHandlerCallbacks(..), RestResult(..), InitHandler)
+import Stetson.Types (Authorized(..), InitResult(..), StetsonHandlerCallbacks(..), RestResult(..), InitHandler, CowboyHandler(..))
+import Erl.ModuleName (NativeModuleName(..))
 import Unsafe.Coerce (unsafeCoerce)
 
 import Erl.Cowboy.Handlers.WebSocket as CowboyWS
@@ -112,6 +113,11 @@ content_types_accepted = mkEffectFn2 \req state@{ handler, innerState } ->
        Just factory -> do
           factoryResp <- factory req innerState
           case factoryResp of
+            RestSwitch handler rq st -> pure $ Cowboy.switchHandler ((NativeModuleName <<< atom) $ case handler of
+                                                                                   RestHandler -> "cowboy_rest"
+                                                                                   LoopHandler -> "cowboy_loop"
+                                                                                   WebSocketHandler -> "cowboy_websocket") 
+                                                            (state { innerState = st }) rq
             RestOk callbacks req2 innerState2 ->
               let
                 fns = map (\tuple -> uncurry2 (\ct fn -> fn) tuple) callbacks
@@ -130,6 +136,11 @@ content_types_provided = mkEffectFn2 \req state@{ handler, innerState } ->
        Just factory -> do
           factoryResp <- factory req innerState
           case factoryResp of
+            RestSwitch handler rq st -> pure $ Cowboy.switchHandler ((NativeModuleName <<< atom) $ case handler of
+                                                                                   RestHandler -> "cowboy_rest"
+                                                                                   LoopHandler -> "cowboy_loop"
+                                                                                   WebSocketHandler -> "cowboy_websocket") 
+                                                            (state { innerState = st }) rq
             RestOk callbacks req2 innerState2 ->
               let
                 fns = map (\tuple -> uncurry2 (\ct fn -> fn) tuple) callbacks
@@ -149,6 +160,7 @@ mapReply :: forall msg state reply mappedReply. (reply -> mappedReply) -> Effect
 mapReply mapFn org = do
   orgResult <- org
   case orgResult of
+    RestSwitch handler rq st -> pure $ RestSwitch handler rq st
     RestOk re rq st -> pure $ RestOk (mapFn re) rq st
     RestStop rq st -> pure $ RestStop rq st
 
@@ -156,6 +168,11 @@ restResult :: forall reply msg state. State msg state -> Maybe (Effect (RestResu
 restResult outerState (Just callback) = do
   result <- callback
   case result of
+    RestSwitch handler rq st -> pure $ Cowboy.switchHandler ((NativeModuleName <<< atom) $ case handler of
+                                                                                   RestHandler -> "cowboy_rest"
+                                                                                   LoopHandler -> "cowboy_loop"
+                                                                                   WebSocketHandler -> "cowboy_websocket") 
+                                                            (outerState { innerState = st }) rq
     RestOk re rq st -> pure $ Cowboy.restResult re (outerState { innerState = st }) rq
     RestStop rq st ->
       do
