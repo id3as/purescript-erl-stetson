@@ -45,11 +45,11 @@ init :: forall msg state. EffectFn2 Req (StetsonHandlerCallbacks msg state) Elid
 init = mkEffectFn2 \req handler -> do
   res <- handler.init req
   case  res of
-       (Rest req2 innerState) -> pure $ restInitResult { handler, innerState, acceptHandlers: nil, provideHandlers: nil } req
-       (WebSocket req2 innerState) ->  pure $ wsInitResult { handler, innerState, acceptHandlers: nil, provideHandlers: nil } req
+       (Rest req2 innerState) -> pure $ restInitResult { handler, innerState, acceptHandlers: nil, provideHandlers: nil } req2
+       (WebSocket req2 innerState) ->  pure $ wsInitResult { handler, innerState, acceptHandlers: nil, provideHandlers: nil } req2
        (Loop req2 innerState) -> do
          innerState2 <- applyLoopInit handler req innerState
-         pure $ loopInitResult { handler, innerState: innerState2, acceptHandlers: nil, provideHandlers: nil } req
+         pure $ loopInitResult { handler, innerState: innerState2, acceptHandlers: nil, provideHandlers: nil } req2
 
 --
 -- Rest handler
@@ -307,9 +307,9 @@ applyLoopInit { loopInit: Just loopInit } req state = do
 --- Switching
 ---
 switchHandler :: forall reply msg state. CowboyHandler -> Req -> State msg state -> Effect (Cowboy.RestResult reply (State msg state))
-switchHandler RestHandler req state@{ innerState } = 
+switchHandler RestHandler req state@{ innerState } =
   pure $ Cowboy.switchHandler (NativeModuleName $ atom "cowboy_rest") state req
-switchHandler WebSocketHandler req state@{ innerState } = 
+switchHandler WebSocketHandler req state@{ innerState } =
   pure $ Cowboy.switchHandler (NativeModuleName $ atom "cowboy_websocket") state req
 switchHandler LoopHandler req state@{ innerState, handler } = do
   innerState2 <- applyLoopInit handler req innerState
