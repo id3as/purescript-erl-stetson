@@ -42,7 +42,7 @@ import RoutingDuplexMiddleware as RoutingMiddleware
 import Stetson.ModuleNames as ModuleNames
 import Stetson.Routing (class GDispatch, gDispatch)
 import Stetson.Routing as Routing
-import Stetson.Types (AcceptHandler, Authorized(..), HandlerArgs, HttpMethod(..), InitHandler, InitResult(..), ProvideHandler, RestResult(..), RouteHandler(..), StaticAssetLocation(..), StetsonConfig, StetsonHandler, WebSocketCallResult(..), WebSocketHandleHandler, WebSocketInfoHandler, WebSocketInitHandler, runStetsonRoute, mkStetsonRoute, ReceivingStetsonHandler, RestHandler, emptyHandler, CowboyHandler(..), LoopCallResult(..), StetsonHandlerBuilder(..))
+import Stetson.Types (AcceptHandler, Authorized(..), HandlerArgs, HttpMethod(..), InitHandler, InitResult(..), ProvideHandler, RestResult(..), RouteHandler(..), StaticAssetLocation(..), StetsonConfig, StetsonHandler, WebSocketCallResult(..), WebSocketHandleHandler, WebSocketInfoHandler, WebSocketInitHandler, runStetsonRoute, mkStetsonRoute, emptyHandler, CowboyHandler(..), LoopCallResult(..), StetsonHandler(..), SimpleStetsonHandler(..))
 import Unsafe.Coerce (unsafeCoerce)
 
 -- | Creates a blank stetson config with default settings and no routes
@@ -137,9 +137,9 @@ startClear name config@{ bindAddress, bindPort, streamHandlers: streamHandlers_,
         }
       CowboyRouteFallthrough -> tuple2 req $ Left CowboyRouterFallback
 
-  mapRoute :: forall b c. _ -> StetsonHandlerBuilder b c -> _
+  mapRoute :: forall b c. _ -> StetsonHandler b c -> _
   mapRoute req = case _ of
-    (StetsonHandlerBuilder handler) -> tuple2 req $ Right
+    (StetsonHandler handler) -> tuple2 req $ Right
         { mod: nativeModuleName ModuleNames.stetsonHandlerProxy
         , args: unsafeToForeign handler
         } 

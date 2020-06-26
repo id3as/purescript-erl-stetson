@@ -12,7 +12,7 @@ module Stetson.Types ( RestResult(..)
                , HttpMethod(..)
                , Authorized(..)
                , StetsonHandler(..)
-               , StetsonHandlerBuilder(..)
+               , SimpleStetsonHandler(..)
                , StetsonHandlerCallbacks(..)
                , StaticAssetLocation(..)
                , CowboyRoutePlaceholder(..)
@@ -20,14 +20,12 @@ module Stetson.Types ( RestResult(..)
                , StetsonConfig
                , RouteHandler(..)
                , StetsonRouteInner
-               , RestHandler
                , CowboyHandler(..)
                , LoopInitHandler(..)
                , LoopInfoHandler(..)
                , LoopInternalState(..)
                , LoopResult(..)
                , LoopCallResult(..)
-               , ReceivingStetsonHandler
                , mkStetsonRoute
                , runStetsonRoute
                , emptyHandler
@@ -89,7 +87,10 @@ type AcceptHandler state = Req -> state -> Effect (RestResult Boolean state)
 type ProvideHandler state = Req -> state -> Effect (RestResult String state)
 
 -- | A builder containing the complete set of callbacks for any sort of request
-data StetsonHandlerBuilder msg state = StetsonHandlerBuilder (StetsonHandlerCallbacks msg state)
+data StetsonHandler msg state = StetsonHandler (StetsonHandlerCallbacks msg state)
+  
+-- | A type alias for StetsonHandler, but with no ability to receive messages
+type SimpleStetsonHandler state = StetsonHandler Unit state
 
 -- | The built record containing callbacks for any sort of request
 type StetsonHandlerCallbacks msg state = {
@@ -186,20 +187,11 @@ data StaticAssetLocation = PrivDir String String
 
 data CowboyRoutePlaceholder = CowboyRoutePlaceholder
 
--- | This type no longer needs to exist and is only here to serve code that used the old API
-type ReceivingStetsonHandler msg state = StetsonHandlerBuilder msg state
-
--- | This type no longer needs to exist and is only heree to serve code that used the old API
-type StetsonHandler state = StetsonHandlerBuilder Unit state
-
--- | This type no longer needs to exist and is only here to serve code that used the old API
-type RestHandler state = StetsonHandlerBuilder Unit state
-
-newtype StetsonRouteInner a = StetsonRouteInner (Exists (StetsonHandlerBuilder a))
+newtype StetsonRouteInner a = StetsonRouteInner (Exists (StetsonHandler a))
 
 mkStetsonRoute r = mkExists (StetsonRouteInner $ mkExists r)
 
-runStetsonRoute :: forall z. (forall b c. StetsonHandlerBuilder b c -> z) -> Exists StetsonRouteInner -> z
+runStetsonRoute :: forall z. (forall b c. StetsonHandler b c -> z) -> Exists StetsonRouteInner -> z
 runStetsonRoute runHandler r = runExists runInner r
   where
   runInner :: forall a. StetsonRouteInner a -> z
@@ -222,26 +214,26 @@ type StetsonConfig a =
   , dispatch :: a -> RouteHandler
   }
 
-emptyHandler :: forall msg state. InitHandler state -> StetsonHandlerBuilder msg state
+emptyHandler :: forall msg state. InitHandler state -> StetsonHandler msg state
 emptyHandler init = 
-  StetsonHandlerBuilder { init                 : init
-                        , allowedMethods       : Nothing
-                        , malformedRequest     : Nothing
-                        , resourceExists       : Nothing
-                        , contentTypesAccepted : Nothing
-                        , contentTypesProvided : Nothing
-                        , deleteResource       : Nothing
-                        , isAuthorized         : Nothing
-                        , isConflict           : Nothing
-                        , movedTemporarily     : Nothing
-                        , movedPermanently     : Nothing
-                        , serviceAvailable     : Nothing
-                        , previouslyExisted    : Nothing
-                        , allowMissingPost     : Nothing
-                        , forbidden            : Nothing
-                        , wsInit               : Nothing
-                        , wsHandle             : Nothing
-                        , wsInfo               : Nothing
-                        , loopInit             : Nothing
-                        , loopInfo             : Nothing
-                        }
+  StetsonHandler { init                 : init
+                 , allowedMethods       : Nothing
+                 , malformedRequest     : Nothing
+                 , resourceExists       : Nothing
+                 , contentTypesAccepted : Nothing
+                 , contentTypesProvided : Nothing
+                 , deleteResource       : Nothing
+                 , isAuthorized         : Nothing
+                 , isConflict           : Nothing
+                 , movedTemporarily     : Nothing
+                 , movedPermanently     : Nothing
+                 , serviceAvailable     : Nothing
+                 , previouslyExisted    : Nothing
+                 , allowMissingPost     : Nothing
+                 , forbidden            : Nothing
+                 , wsInit               : Nothing
+                 , wsHandle             : Nothing
+                 , wsInfo               : Nothing
+                 , loopInit             : Nothing
+                 , loopInfo             : Nothing
+                 }

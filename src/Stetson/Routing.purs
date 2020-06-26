@@ -34,12 +34,12 @@ instance gDispatchConstructor ::
 class GDispatchCtor rep f where
   gDispatchC :: f -> rep -> RouteHandler
 
-instance gDispatchC0 :: GDispatchCtor NoArguments (StetsonHandlerBuilder x s) where
+instance gDispatchC0 :: GDispatchCtor NoArguments (StetsonHandler x s) where
   gDispatchC handler NoArguments = StetsonRoute (mkStetsonRoute handler)
 instance gDispatchStatic :: GDispatchCtor NoArguments StaticAssetLocation where
   gDispatchC route NoArguments = StaticRoute [] route
 
-instance gDispatchC1 :: GDispatchCtor (Argument a) (a -> (StetsonHandlerBuilder x s)) where
+instance gDispatchC1 :: GDispatchCtor (Argument a) (a -> (StetsonHandler x s)) where
   gDispatchC handler (Argument a) = StetsonRoute (mkStetsonRoute (handler a))
 instance gDispatchStatic1 :: GDispatchCtor (Argument (Array String)) StaticAssetLocation where
   gDispatchC route (Argument a) = StaticRoute a route
@@ -56,5 +56,5 @@ instance gDispatchCN ::
 instance gDispatchCowboy :: GDispatchCtor any CowboyRoutePlaceholder where
   gDispatchC route anything = CowboyRouteFallthrough
 
-dummyHandler :: StetsonHandlerBuilder Unit Unit
+dummyHandler :: StetsonHandler Unit Unit
 dummyHandler = Rest.handler (\req -> pure $ Rest req unit)
