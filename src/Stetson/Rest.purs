@@ -22,7 +22,6 @@ module Stetson.Rest ( handler
                     , stop
                     , preHook
                     , preHook'
-                    , yeeha
                     )
   where
 
@@ -34,67 +33,67 @@ import Erl.Cowboy.Handlers.Rest (MovedResult, switchHandler)
 import Erl.Cowboy.Req (Req)
 import Erl.Data.List (List)
 import Erl.Data.Tuple (Tuple2)
-import Stetson.Types (AcceptHandler, Authorized, CowboyHandler, HttpMethod, InitHandler, InitResult(..), InnerStetsonHandler(..), ProvideHandler, RestResult(..), StetsonHandlerCallbacks, StetsonHandlerCallbacks(..), emptyHandler)
+import Stetson.Types (AcceptHandler, Authorized, CowboyHandler, HttpMethod, InitHandler, InitResult(..), ProvideHandler, RestResult(..), StetsonHandlerBuilder, StetsonHandlerBuilder(..), emptyHandler)
 
 -- | Create a cowboy REST handler with the provided Init handler and no callbacks defined
-handler :: forall state. InitHandler state -> StetsonHandlerCallbacks Unit state
+handler :: forall state. InitHandler state -> StetsonHandlerBuilder Unit state
 handler = emptyHandler
 
--- | Add an allowedMethods callback to the provided StetsonHandlerCallbacks
-allowedMethods :: forall msg state. (Req -> state -> Effect (RestResult (List HttpMethod) state)) -> StetsonHandlerCallbacks msg state -> StetsonHandlerCallbacks msg state
-allowedMethods fn handler_ = (handler_ { allowedMethods = Just fn })
+-- | Add an allowedMethods callback to the provided StetsonHandlerBuilder
+allowedMethods :: forall msg state. (Req -> state -> Effect (RestResult (List HttpMethod) state)) -> StetsonHandlerBuilder msg state -> StetsonHandlerBuilder msg state
+allowedMethods fn (StetsonHandlerBuilder h) = (StetsonHandlerBuilder $ h { allowedMethods = Just fn })
 
--- | Add an malformedRequest callback to the provided StetsonHandlerCallbacks
-malformedRequest :: forall msg state. (Req -> state -> Effect (RestResult Boolean state)) -> StetsonHandlerCallbacks msg state -> StetsonHandlerCallbacks msg state
-malformedRequest fn handler_ = (handler_ { malformedRequest = Just fn })
+-- | Add an malformedRequest callback to the provided StetsonHandlerBuilder
+malformedRequest :: forall msg state. (Req -> state -> Effect (RestResult Boolean state)) -> StetsonHandlerBuilder msg state -> StetsonHandlerBuilder msg state
+malformedRequest fn (StetsonHandlerBuilder h) = (StetsonHandlerBuilder $ h { malformedRequest = Just fn })
 
--- | Add a resourceExists callback to the provided StetsonHandlerCallbacks
-resourceExists :: forall msg state. (Req -> state -> Effect (RestResult Boolean state)) -> StetsonHandlerCallbacks msg state -> StetsonHandlerCallbacks msg state
-resourceExists fn handler_ = (handler_ { resourceExists = Just fn })
+-- | Add a resourceExists callback to the provided StetsonHandlerBuilder
+resourceExists :: forall msg state. (Req -> state -> Effect (RestResult Boolean state)) -> StetsonHandlerBuilder msg state -> StetsonHandlerBuilder msg state
+resourceExists fn (StetsonHandlerBuilder h) = (StetsonHandlerBuilder $ h { resourceExists = Just fn })
 
--- | Add an isAuthorized callback to the provided StetsonHandlerCallbacks
-isAuthorized :: forall msg state. (Req -> state -> Effect (RestResult Authorized state)) -> StetsonHandlerCallbacks msg state -> StetsonHandlerCallbacks msg state
-isAuthorized fn handler_ = (handler_ { isAuthorized = Just fn })
+-- | Add an isAuthorized callback to the provided StetsonHandlerBuilder
+isAuthorized :: forall msg state. (Req -> state -> Effect (RestResult Authorized state)) -> StetsonHandlerBuilder msg state -> StetsonHandlerBuilder msg state
+isAuthorized fn (StetsonHandlerBuilder h) = (StetsonHandlerBuilder $ h { isAuthorized = Just fn })
 
--- | Add an isConflict callback to the provided StetsonHandlerCallbacks
-isConflict :: forall msg state. (Req -> state -> Effect (RestResult Boolean state)) -> StetsonHandlerCallbacks msg state -> StetsonHandlerCallbacks msg state
-isConflict fn handler_ = (handler_ { isConflict = Just fn })
+-- | Add an isConflict callback to the provided StetsonHandlerBuilder
+isConflict :: forall msg state. (Req -> state -> Effect (RestResult Boolean state)) -> StetsonHandlerBuilder msg state -> StetsonHandlerBuilder msg state
+isConflict fn (StetsonHandlerBuilder h) = (StetsonHandlerBuilder $ h { isConflict = Just fn })
 
--- | Add a contentTypesAccepted callback to the provided StetsonHandlerCallbacks
-contentTypesAccepted :: forall msg state. (Req -> state -> Effect (RestResult (List (Tuple2 String (AcceptHandler state))) state)) -> StetsonHandlerCallbacks msg state -> StetsonHandlerCallbacks msg state
-contentTypesAccepted fn handler_ = (handler_ { contentTypesAccepted = Just fn  })
+-- | Add a contentTypesAccepted callback to the provided StetsonHandlerBuilder
+contentTypesAccepted :: forall msg state. (Req -> state -> Effect (RestResult (List (Tuple2 String (AcceptHandler state))) state)) -> StetsonHandlerBuilder msg state -> StetsonHandlerBuilder msg state
+contentTypesAccepted fn (StetsonHandlerBuilder h) = (StetsonHandlerBuilder $ h { contentTypesAccepted = Just fn  })
 
--- | Add a contentTypesProvided callback to the provided StetsonHandlerCallbacks
-contentTypesProvided :: forall msg state. (Req -> state -> Effect (RestResult (List (Tuple2 String (ProvideHandler state))) state)) -> StetsonHandlerCallbacks msg state -> StetsonHandlerCallbacks msg state
-contentTypesProvided fn handler_ = (handler_ { contentTypesProvided = Just fn  })
+-- | Add a contentTypesProvided callback to the provided StetsonHandlerBuilder
+contentTypesProvided :: forall msg state. (Req -> state -> Effect (RestResult (List (Tuple2 String (ProvideHandler state))) state)) -> StetsonHandlerBuilder msg state -> StetsonHandlerBuilder msg state
+contentTypesProvided fn (StetsonHandlerBuilder h) = (StetsonHandlerBuilder $ h { contentTypesProvided = Just fn  })
 
--- | Add a deleteResource callback to the provided StetsonHandlerCallbacks
-deleteResource :: forall msg state. (Req -> state -> Effect (RestResult Boolean state)) -> StetsonHandlerCallbacks msg state -> StetsonHandlerCallbacks msg state
-deleteResource fn handler_ = (handler_ { deleteResource = Just fn })
+-- | Add a deleteResource callback to the provided StetsonHandlerBuilder
+deleteResource :: forall msg state. (Req -> state -> Effect (RestResult Boolean state)) -> StetsonHandlerBuilder msg state -> StetsonHandlerBuilder msg state
+deleteResource fn (StetsonHandlerBuilder h) = (StetsonHandlerBuilder $ h { deleteResource = Just fn })
 
--- | Add a movedTemporarily callback to the provided StetsonHandlerCallbacks
-movedTemporarily :: forall msg state. (Req -> state -> Effect (RestResult MovedResult state)) -> StetsonHandlerCallbacks msg state -> StetsonHandlerCallbacks msg state
-movedTemporarily fn handler_ = (handler_ { movedTemporarily = Just fn })
+-- | Add a movedTemporarily callback to the provided StetsonHandlerBuilder
+movedTemporarily :: forall msg state. (Req -> state -> Effect (RestResult MovedResult state)) -> StetsonHandlerBuilder msg state -> StetsonHandlerBuilder msg state
+movedTemporarily fn (StetsonHandlerBuilder h) = (StetsonHandlerBuilder $ h { movedTemporarily = Just fn })
 
--- | Add a movedPermanently callback to the provided StetsonHandlerCallbacks
-movedPermanently :: forall msg state. (Req -> state -> Effect (RestResult MovedResult state)) -> StetsonHandlerCallbacks msg state -> StetsonHandlerCallbacks msg state
-movedPermanently fn handler_ = (handler_ { movedPermanently = Just fn })
+-- | Add a movedPermanently callback to the provided StetsonHandlerBuilder
+movedPermanently :: forall msg state. (Req -> state -> Effect (RestResult MovedResult state)) -> StetsonHandlerBuilder msg state -> StetsonHandlerBuilder msg state
+movedPermanently fn (StetsonHandlerBuilder h) = (StetsonHandlerBuilder $ h { movedPermanently = Just fn })
 
--- | Add a serviceAvailable callback to the provided StetsonHandlerCallbacks
-serviceAvailable :: forall msg state. (Req -> state -> Effect (RestResult Boolean state)) -> StetsonHandlerCallbacks msg state -> StetsonHandlerCallbacks msg state
-serviceAvailable fn handler_ = (handler_ { serviceAvailable = Just fn })
+-- | Add a serviceAvailable callback to the provided StetsonHandlerBuilder
+serviceAvailable :: forall msg state. (Req -> state -> Effect (RestResult Boolean state)) -> StetsonHandlerBuilder msg state -> StetsonHandlerBuilder msg state
+serviceAvailable fn (StetsonHandlerBuilder h) = (StetsonHandlerBuilder $ h { serviceAvailable = Just fn })
 
--- | Add a previouslyExisted callback to the provided StetsonHandlerCallbacks
-previouslyExisted :: forall msg state. (Req -> state -> Effect (RestResult Boolean state)) -> StetsonHandlerCallbacks msg state -> StetsonHandlerCallbacks msg state
-previouslyExisted fn handler_ = (handler_ { previouslyExisted = Just fn })
+-- | Add a previouslyExisted callback to the provided StetsonHandlerBuilder
+previouslyExisted :: forall msg state. (Req -> state -> Effect (RestResult Boolean state)) -> StetsonHandlerBuilder msg state -> StetsonHandlerBuilder msg state
+previouslyExisted fn (StetsonHandlerBuilder h) = (StetsonHandlerBuilder $ h { previouslyExisted = Just fn })
 
--- | Add a allowMissingPost callback to the provided StetsonHandlerCallbacks
-allowMissingPost :: forall msg state. (Req -> state -> Effect (RestResult Boolean state)) -> StetsonHandlerCallbacks msg state -> StetsonHandlerCallbacks msg state
-allowMissingPost fn handler_ = (handler_ { allowMissingPost = Just fn })
+-- | Add a allowMissingPost callback to the provided StetsonHandlerBuilder
+allowMissingPost :: forall msg state. (Req -> state -> Effect (RestResult Boolean state)) -> StetsonHandlerBuilder msg state -> StetsonHandlerBuilder msg state
+allowMissingPost fn (StetsonHandlerBuilder h) = (StetsonHandlerBuilder $ h { allowMissingPost = Just fn })
 
--- | Add a forbidden callback to the provided StetsonHandlerCallbacks
-forbidden :: forall msg state. (Req -> state -> Effect (RestResult Boolean state)) -> StetsonHandlerCallbacks msg state -> StetsonHandlerCallbacks msg state
-forbidden fn handler_ = (handler_ { forbidden = Just fn })
+-- | Add a forbidden callback to the provided StetsonHandlerBuilder
+forbidden :: forall msg state. (Req -> state -> Effect (RestResult Boolean state)) -> StetsonHandlerBuilder msg state -> StetsonHandlerBuilder msg state
+forbidden fn (StetsonHandlerBuilder h) = (StetsonHandlerBuilder $ h { forbidden = Just fn })
 
 -- | Create an init response for return from an InitHandler
 initResult :: forall msg state. Req -> state -> Effect (InitResult state)
@@ -112,16 +111,12 @@ switchHandler handler rq st = pure $ RestSwitch handler rq st
 stop :: forall reply state. Req -> state -> Effect (RestResult reply state)
 stop rq st = pure $ RestStop rq st
 
--- | Finish defining this rest handler, yeehaaw
-yeeha :: forall msg state. StetsonHandlerCallbacks msg state -> InnerStetsonHandler msg state
-yeeha = Complete -- may not need this any more
-
 --------------------------------------------------------------------------------
 -- Debug helpers
 --------------------------------------------------------------------------------
 preHook :: forall msg state.
            (forall state2. String -> Req -> state2 -> Effect Unit)
-             -> StetsonHandlerCallbacks msg state -> StetsonHandlerCallbacks msg state
+             -> StetsonHandlerBuilder msg state -> StetsonHandlerBuilder msg state
 
 preHook hook =
   preHook'
@@ -133,28 +128,28 @@ preHook hook =
 -- | Add a hook in front of every call to a handler
 preHook' :: forall msg state.
            (forall a state2. (String -> (Req -> state2 -> Effect a) -> (Req -> state2 -> Effect a)))
-             -> StetsonHandlerCallbacks msg state -> StetsonHandlerCallbacks msg state
-preHook' hook state =
-  { init: state.init
-  , allowedMethods       : hook "allowedMethods"       <$> state.allowedMethods
-  , malformedRequest     : hook "malformedRequest"     <$> state.malformedRequest
-  , resourceExists       : hook "resourceExists"       <$> state.resourceExists
-  , contentTypesAccepted : hook "contentTypesAccepted" <$> state.contentTypesAccepted
-  , contentTypesProvided : hook "contentTypesProvided" <$> state.contentTypesProvided
-  , deleteResource       : hook "deleteResource"       <$> state.deleteResource
-  , isAuthorized         : hook "isAuthorized"         <$> state.isAuthorized
-  , isConflict           : hook "isConflict"           <$> state.isConflict
-  , movedTemporarily     : hook "movedTemporarily"     <$> state.movedTemporarily
-  , movedPermanently     : hook "movedPermanently"     <$> state.movedPermanently
-  , serviceAvailable     : hook "serviceAvailable"     <$> state.serviceAvailable
-  , previouslyExisted    : hook "previouslyExisted"    <$> state.previouslyExisted
-  , allowMissingPost     : hook "allowMissingPost"     <$> state.allowMissingPost
-  , forbidden            : hook "forbidden"            <$> state.forbidden
+             -> StetsonHandlerBuilder msg state -> StetsonHandlerBuilder msg state
+preHook' hook (StetsonHandlerBuilder state) =
+  StetsonHandlerBuilder { init: state.init
+                        , allowedMethods       : hook "allowedMethods"       <$> state.allowedMethods
+                        , malformedRequest     : hook "malformedRequest"     <$> state.malformedRequest
+                        , resourceExists       : hook "resourceExists"       <$> state.resourceExists
+                        , contentTypesAccepted : hook "contentTypesAccepted" <$> state.contentTypesAccepted
+                        , contentTypesProvided : hook "contentTypesProvided" <$> state.contentTypesProvided
+                        , deleteResource       : hook "deleteResource"       <$> state.deleteResource
+                        , isAuthorized         : hook "isAuthorized"         <$> state.isAuthorized
+                        , isConflict           : hook "isConflict"           <$> state.isConflict
+                        , movedTemporarily     : hook "movedTemporarily"     <$> state.movedTemporarily
+                        , movedPermanently     : hook "movedPermanently"     <$> state.movedPermanently
+                        , serviceAvailable     : hook "serviceAvailable"     <$> state.serviceAvailable
+                        , previouslyExisted    : hook "previouslyExisted"    <$> state.previouslyExisted
+                        , allowMissingPost     : hook "allowMissingPost"     <$> state.allowMissingPost
+                        , forbidden            : hook "forbidden"            <$> state.forbidden
 
-  -- TODO: These
-  , wsInit               : state.wsInit
-  , wsHandle             : state.wsHandle
-  , wsInfo               : state.wsInfo
-  , loopInfo             : state.loopInfo
-  , loopInit             : state.loopInit
-  }
+                        -- TODO: These
+                        , wsInit               : state.wsInit
+                        , wsHandle             : state.wsHandle
+                        , wsInfo               : state.wsInfo
+                        , loopInfo             : state.loopInfo
+                        , loopInit             : state.loopInit
+                        }

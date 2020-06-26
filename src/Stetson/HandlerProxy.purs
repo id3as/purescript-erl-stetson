@@ -7,18 +7,21 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Effect (Effect)
 import Effect.Uncurried (mkEffectFn1, mkEffectFn2, mkEffectFn3)
 import Erl.Process.Raw (Pid, send)
+import Erl.Process (Process(..))
 import Foreign (Foreign)
 import Stetson (InitResult(..), WebSocketCallResult(..))
 import Unsafe.Coerce (unsafeCoerce)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
+import Data.Tuple (Tuple(..))
 import Effect.Uncurried (EffectFn2, mkEffectFn2)
+import Control.Monad.State ( evalStateT )
 import Erl.Atom (atom)
 import Erl.Cowboy.Handlers.Rest (RestResult, restResult, stop, switchHandler) as Cowboy
 import Erl.Cowboy.Req (Req)
 import Erl.Data.List (List, mapWithIndex, nil, (!!))
 import Erl.Data.Tuple (tuple2, uncurry2)
-import Stetson.Types (Authorized(..), InitResult(..), StetsonHandlerCallbacks(..), RestResult(..), InitHandler, CowboyHandler(..), LoopCallResult(..), LoopInitHandler(..))
+import Stetson.Types (Authorized(..), InitResult(..), StetsonHandlerCallbacks(..), RestResult(..), InitHandler, CowboyHandler(..), LoopCallResult(..), LoopInitHandler(..), LoopInternalState(..), WebSocketInternalState(..))
 import Erl.ModuleName (NativeModuleName(..))
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -235,12 +238,15 @@ provide_6 = provide 6
 --
 
 
+wsState :: forall msg. Effect (WebSocketInternalState msg)
+wsState = Process <$> self 
+
 websocket_init :: forall msg state. CowboyWS.WSInitHandler (State msg state)
 websocket_init = mkEffectFn1 \state -> do
   case state of
     { innerState, handler: { wsInit: Just wsInit }} -> do
       pid <- self
-      transformWsResult state =<< wsInit (router pid) innerState
+      transformWsResult state =<< evalStateT (wsInit innerState) =<< wsState
     _ ->
       pure $ CowboyWS.okResult state
 
@@ -253,7 +259,7 @@ websocket_handle :: forall msg state. CowboyWS.FrameHandler (State msg state)
 websocket_handle = mkEffectFn2 \frame state ->
   case state of
     { innerState, handler: { wsHandle: Just handle }} ->
-      transformWsResult state =<< handle (CowboyWS.decodeInFrame frame) innerState
+      transformWsResult state =<< evalStateT (handle (CowboyWS.decodeInFrame frame) innerState) =<< wsState
     _ ->
       pure $ CowboyWS.okResult state
 
@@ -261,7 +267,7 @@ websocket_info :: forall msg state. CowboyWS.InfoHandler msg (State msg state)
 websocket_info = mkEffectFn2 \msg state ->
   case state of
     { innerState, handler: { wsInfo: Just info }} ->
-        transformWsResult state =<< info msg innerState
+        transformWsResult state =<< evalStateT (info msg innerState) =<< wsState
     _ ->
       pure $ CowboyWS.okResult state
 
@@ -279,12 +285,14 @@ transformWsResult state result =
 --- Loop handler
 ---
 
+loopState :: forall msg. Effect (LoopInternalState msg)
+loopState = Process <$> self 
 
 info :: forall msg state. CowboyLoop.InfoHandler msg (State msg state)
 info = mkEffectFn3 \msg req state ->
   case state of
     { innerState, handler: { loopInfo: Just info }} ->
-        transformLoopResult state =<< info msg req innerState
+        transformLoopResult state =<< evalStateT (info msg req innerState) =<< loopState
     _ ->
       pure $ CowboyLoop.continue state req
 
@@ -298,10 +306,7 @@ transformLoopResult state result =
 applyLoopInit :: forall msg state. StetsonHandlerCallbacks msg state -> Req -> state -> Effect state
 applyLoopInit { loopInit: Nothing } req state = pure state
 applyLoopInit { loopInit: Just loopInit } req state = do
-  pid <- self
-  loopInit (router pid) req state
-
-
+  evalStateT (loopInit req state) =<< loopState
 
 ---
 --- Switching

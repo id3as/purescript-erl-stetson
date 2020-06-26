@@ -6,13 +6,14 @@ module Stetson.Types ( RestResult(..)
                , WebSocketInitHandler
                , WebSocketInfoHandler
                , WebSocketHandleHandler
-               , WebSocketMessageRouter
+               , WebSocketResult(..)
                , WebSocketCallResult(..)
+               , WebSocketInternalState(..)
                , HttpMethod(..)
                , Authorized(..)
                , StetsonHandler(..)
+               , StetsonHandlerBuilder(..)
                , StetsonHandlerCallbacks(..)
-               , InnerStetsonHandler(..)
                , StaticAssetLocation(..)
                , CowboyRoutePlaceholder(..)
                , HandlerArgs
@@ -22,8 +23,9 @@ module Stetson.Types ( RestResult(..)
                , RestHandler
                , CowboyHandler(..)
                , LoopInitHandler(..)
-               , LoopMessageRouter(..)
                , LoopInfoHandler(..)
+               , LoopInternalState(..)
+               , LoopResult(..)
                , LoopCallResult(..)
                , ReceivingStetsonHandler
                , mkStetsonRoute
@@ -40,10 +42,12 @@ import Erl.Cowboy.Handlers.Rest (MovedResult)
 import Erl.Cowboy.Handlers.WebSocket (Frame)
 import Erl.Cowboy.Req (Req)
 import Erl.Cowboy.Routes as Routes
+import Erl.Process (Process)
 import Erl.Data.List (List)
 import Erl.Data.Tuple (Tuple2, Tuple4)
 import Erl.ModuleName (NativeModuleName)
 import Foreign (Foreign)
+import Control.Monad.State (State, StateT)
 import Routing.Duplex (RouteDuplex')
 
 foreign import data HandlerArgs :: Type
@@ -85,6 +89,9 @@ type AcceptHandler state = Req -> state -> Effect (RestResult Boolean state)
 type ProvideHandler state = Req -> state -> Effect (RestResult String state)
 
 -- | A builder containing the complete set of callbacks for any sort of request
+data StetsonHandlerBuilder msg state = StetsonHandlerBuilder (StetsonHandlerCallbacks msg state)
+
+-- | The built record containing callbacks for any sort of request
 type StetsonHandlerCallbacks msg state = {
 
   -- Shared
@@ -138,62 +145,61 @@ data WebSocketCallResult state = NoReply state
                                | ReplyAndHibernate (List Frame) state
                                | Stop state
 
+-- | We'll probably end up with more in here than just the current pid..
+type WebSocketInternalState msg = Process msg
 
--- | Router used to generate messages of the right type that'll appear
--- | in the info callback of a WebSocket handler
-type WebSocketMessageRouter msg = (msg -> Effect Unit)
+-- | All of the Loop handlers take place in a StateT so we can do things like get the current pid
+type WebSocketResult msg r =  StateT (WebSocketInternalState msg) Effect r
 
--- | Callback used to kick off the WebSocket handler, it is here where subscriptions should be
--- | created, and in their callbacks the messages should be passed into the router for dealing with in the info callback
-type WebSocketInitHandler msg state = WebSocketMessageRouter msg -> state -> Effect (WebSocketCallResult state)
+-- | Callback used to kick off the WebSocket handler
+-- | This is a good time to get hold of 'self' and set up subscriptions 
+type WebSocketInitHandler msg state = state -> WebSocketResult msg (WebSocketCallResult state)
 
 -- | Callback used to handle messages sent from the client in the form of 'Frames' which will need
 -- | unpacking/decoding/parsing etc
-type WebSocketHandleHandler msg state = Frame -> state -> Effect (WebSocketCallResult state)
+type WebSocketHandleHandler msg state = Frame -> state -> WebSocketResult msg (WebSocketCallResult state)
 
 -- | Callback used to handle messages sent from Erlang (hopefully via the router) so they'll be of the right type
-type WebSocketInfoHandler msg state = msg -> state -> Effect (WebSocketCallResult state)
+type WebSocketInfoHandler msg state = msg -> state -> WebSocketResult msg (WebSocketCallResult state)
 
 -- | Return type of most Loop callbacks
 data LoopCallResult state = LoopOk Req state
                           | LoopHibernate Req state
                           | LoopStop Req state
 
--- | Router used to generate messages of the right type that'll appear
--- | in the info callback of a Loop handler
-type LoopMessageRouter msg = (msg -> Effect Unit)
+
+-- | We'll probably end up with more in here than just the current pid..
+type LoopInternalState msg = Process msg
+
+-- | All of the Loop handlers take place in a StateT so we can do things like get the current pid
+type LoopResult msg r =  StateT (LoopInternalState msg) Effect r
 
 -- | Callback used to kick off the Loop handler, it is here where subscriptions should be
 -- | created, and in their callbacks the messages should be passed into the router for dealing with in the info callback
-type LoopInitHandler msg state = LoopMessageRouter msg -> Req -> state -> Effect state
+type LoopInitHandler msg state = Req -> state -> LoopResult msg state
 
 -- | Callback used to handle messages sent from Erlang (hopefully via the router) so they'll be of the right type
-type LoopInfoHandler msg state = msg -> Req -> state -> Effect (LoopCallResult state)
-
+type LoopInfoHandler msg state = msg -> Req -> state -> LoopResult msg (LoopCallResult state)
 
 data StaticAssetLocation = PrivDir String String
                          | PrivFile String String
 
 data CowboyRoutePlaceholder = CowboyRoutePlaceholder
 
-
--- | The actual type used to collect together handlers internally
-data InnerStetsonHandler msg state = Complete (StetsonHandlerCallbacks msg state)
-
 -- | This type no longer needs to exist and is only here to serve code that used the old API
-type ReceivingStetsonHandler msg state = InnerStetsonHandler msg state
+type ReceivingStetsonHandler msg state = StetsonHandlerBuilder msg state
 
 -- | This type no longer needs to exist and is only heree to serve code that used the old API
-type StetsonHandler state = InnerStetsonHandler Unit state
+type StetsonHandler state = StetsonHandlerBuilder Unit state
 
 -- | This type no longer needs to exist and is only here to serve code that used the old API
-type RestHandler state = StetsonHandlerCallbacks Unit state
+type RestHandler state = StetsonHandlerBuilder Unit state
 
-newtype StetsonRouteInner a = StetsonRouteInner (Exists (InnerStetsonHandler a))
+newtype StetsonRouteInner a = StetsonRouteInner (Exists (StetsonHandlerBuilder a))
 
 mkStetsonRoute r = mkExists (StetsonRouteInner $ mkExists r)
 
-runStetsonRoute :: forall z. (forall b c. InnerStetsonHandler b c -> z) -> Exists StetsonRouteInner -> z
+runStetsonRoute :: forall z. (forall b c. StetsonHandlerBuilder b c -> z) -> Exists StetsonRouteInner -> z
 runStetsonRoute runHandler r = runExists runInner r
   where
   runInner :: forall a. StetsonRouteInner a -> z
@@ -216,26 +222,26 @@ type StetsonConfig a =
   , dispatch :: a -> RouteHandler
   }
 
-emptyHandler :: forall msg state. InitHandler state -> StetsonHandlerCallbacks msg state
+emptyHandler :: forall msg state. InitHandler state -> StetsonHandlerBuilder msg state
 emptyHandler init = 
-  { init                 : init
-  , allowedMethods       : Nothing
-  , malformedRequest     : Nothing
-  , resourceExists       : Nothing
-  , contentTypesAccepted : Nothing
-  , contentTypesProvided : Nothing
-  , deleteResource       : Nothing
-  , isAuthorized         : Nothing
-  , isConflict           : Nothing
-  , movedTemporarily     : Nothing
-  , movedPermanently     : Nothing
-  , serviceAvailable     : Nothing
-  , previouslyExisted    : Nothing
-  , allowMissingPost     : Nothing
-  , forbidden            : Nothing
-  , wsInit               : Nothing
-  , wsHandle             : Nothing
-  , wsInfo               : Nothing
-  , loopInit             : Nothing
-  , loopInfo             : Nothing
-  }
+  StetsonHandlerBuilder { init                 : init
+                        , allowedMethods       : Nothing
+                        , malformedRequest     : Nothing
+                        , resourceExists       : Nothing
+                        , contentTypesAccepted : Nothing
+                        , contentTypesProvided : Nothing
+                        , deleteResource       : Nothing
+                        , isAuthorized         : Nothing
+                        , isConflict           : Nothing
+                        , movedTemporarily     : Nothing
+                        , movedPermanently     : Nothing
+                        , serviceAvailable     : Nothing
+                        , previouslyExisted    : Nothing
+                        , allowMissingPost     : Nothing
+                        , forbidden            : Nothing
+                        , wsInit               : Nothing
+                        , wsHandle             : Nothing
+                        , wsInfo               : Nothing
+                        , loopInit             : Nothing
+                        , loopInfo             : Nothing
+                        }
