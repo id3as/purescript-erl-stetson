@@ -53,8 +53,12 @@ execute req env = unsafePerformEffect $ do
     Nothing ->
       throw "No routes"
     Just routesConfig -> do
-      let Routes routes { dispatch, unmatched } = unsafeFromForeign routesConfig
-      case parse routes (Req.path req) of
+      let
+        Routes routes { dispatch, unmatched } = unsafeFromForeign routesConfig
+        pathAndQuery = case Req.qs req of
+          "" -> Req.path req
+          qs -> Req.path req <> "?" <> qs
+      case parse routes pathAndQuery of
         Right parsedRoute -> do
           flip uncurry2 (dispatch req parsedRoute) \req' dispatched ->
             case dispatched of
@@ -69,13 +73,13 @@ execute req env = unsafePerformEffect $ do
         Default -> do
           req' <- Req.replyStatus (StatusCode 404) req
           pure $ stopResult req'
-        DefaultHandler handler -> 
+        DefaultHandler handler ->
           let env' = updateEnv handler env
           in pure $ okResult req env'
         CowboyRouterFallback ->
           cowboyRouterExecute req env
 
-    updateEnv { mod, args } env = 
-      Map.insert (atom "handler") (unsafeToForeign mod) 
+    updateEnv { mod, args } env =
+      Map.insert (atom "handler") (unsafeToForeign mod)
       $ Map.insert (atom "handler_opts") args
       $ env
