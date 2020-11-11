@@ -19,11 +19,12 @@ import Control.Monad.State ( evalStateT )
 import Erl.Atom (atom)
 import Erl.Cowboy.Handlers.Rest (RestResult, restResult, stop, switchHandler) as Cowboy
 import Erl.Cowboy.Req (Req)
-import Erl.Data.List (List, mapWithIndex, nil, (!!))
+import Erl.Data.List (List, nil, (!!))
 import Erl.Data.Tuple (tuple2, uncurry2)
 import Stetson.Types (Authorized(..), InitResult(..), StetsonHandlerCallbacks(..), RestResult(..), InitHandler, CowboyHandler(..), LoopCallResult(..), LoopInitHandler(..), LoopInternalState(..), WebSocketInternalState(..))
 import Erl.ModuleName (NativeModuleName(..))
 import Unsafe.Coerce (unsafeCoerce)
+import Data.FunctorWithIndex (mapWithIndex)
 
 import Erl.Cowboy.Handlers.WebSocket as CowboyWS
 import Erl.Cowboy.Handlers.Loop as CowboyLoop
@@ -125,7 +126,7 @@ content_types_accepted = mkEffectFn2 \req state@{ handler, innerState } ->
             RestOk callbacks req2 innerState2 ->
               let
                 fns = map (\tuple -> uncurry2 (\ct fn -> fn) tuple) callbacks
-                atoms = mapWithIndex (\tuple i -> uncurry2 (\ct _ -> tuple2 (CowboyRest.SimpleContentType ct) $ CowboyRest.AcceptCallback $ atom $ "accept_" <> show i) tuple) callbacks
+                atoms = mapWithIndex (\i tuple -> uncurry2 (\ct _ -> tuple2 (CowboyRest.SimpleContentType ct) $ CowboyRest.AcceptCallback $ atom $ "accept_" <> show i) tuple) callbacks
               in
                 pure $ Cowboy.restResult (CowboyRest.contentTypesAcceptedResult atoms) (state { innerState = innerState2, acceptHandlers = fns }) req2
             RestStop req2 innerState2 ->
@@ -144,7 +145,7 @@ content_types_provided = mkEffectFn2 \req state@{ handler, innerState } ->
             RestOk callbacks req2 innerState2 ->
               let
                 fns = map (\tuple -> uncurry2 (\ct fn -> fn) tuple) callbacks
-                atoms = mapWithIndex (\tuple i -> uncurry2 (\ct _ -> tuple2 (CowboyRest.SimpleContentType ct) $ CowboyRest.ProvideCallback $ atom $ "provide_" <> show i) tuple) callbacks
+                atoms = mapWithIndex (\i tuple -> uncurry2 (\ct _ -> tuple2 (CowboyRest.SimpleContentType ct) $ CowboyRest.ProvideCallback $ atom $ "provide_" <> show i) tuple) callbacks
               in
                 pure $ Cowboy.restResult (CowboyRest.contentTypesProvidedResult atoms) (state { innerState = innerState2, provideHandlers = fns }) req2
             RestStop req2 innerState2 ->
