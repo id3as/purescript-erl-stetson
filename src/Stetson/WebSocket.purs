@@ -12,7 +12,6 @@ import Prelude
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Erl.Cowboy.Req (Req)
-import Foreign (Foreign)
 import Erl.Process (Process)
 import Control.Monad.State as State
 import Control.Monad.Trans.Class (lift) as Exports
