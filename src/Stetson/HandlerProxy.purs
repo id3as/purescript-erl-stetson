@@ -14,9 +14,9 @@ import Unsafe.Coerce (unsafeCoerce)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Data.Tuple (Tuple(..))
-import Effect.Uncurried (EffectFn2, mkEffectFn2)
+import Effect.Uncurried (EffectFn2, mkEffectFn2, EffectFn3)
 import Control.Monad.State ( evalStateT )
-import Erl.Atom (atom)
+import Erl.Atom (atom, Atom(..))
 import Erl.Cowboy.Handlers.Rest (RestResult, restResult, stop, switchHandler) as Cowboy
 import Erl.Cowboy.Req (Req)
 import Erl.Data.List (List, mapWithIndex, nil, (!!))
@@ -53,6 +53,15 @@ init = mkEffectFn2 \req handler -> do
        (Loop req2 innerState) -> do
          innerState2 <- applyLoopInit handler req innerState
          pure $ loopInitResult { handler, innerState: innerState2, acceptHandlers: nil, provideHandlers: nil } req2
+
+terminate :: forall msg state. EffectFn3 Foreign Req (State msg state) Atom
+terminate = mkEffectFn3 \fgn req state@{ handler, innerState } -> do
+  case handler.terminate of
+    Just t -> do
+       _ <- t fgn req innerState
+       pure $ atom "ok"
+    Nothing ->
+      pure $ atom "ok"
 
 --
 -- Rest handler

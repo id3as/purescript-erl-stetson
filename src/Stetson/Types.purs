@@ -97,6 +97,7 @@ type StetsonHandlerCallbacks msg state = {
 
   -- Shared
     init :: Req -> Effect (InitResult state)
+  , terminate :: Maybe (Foreign -> Req -> state -> Effect Unit)
 
   -- Rest
   , allowedMethods :: Maybe (Req -> state -> Effect (RestResult (List HttpMethod) state))
@@ -217,6 +218,7 @@ type StetsonConfig a =
 emptyHandler :: forall msg state. InitHandler state -> StetsonHandler msg state
 emptyHandler init = 
   StetsonHandler { init                 : init
+                 , terminate            : Nothing
                  , allowedMethods       : Nothing
                  , malformedRequest     : Nothing
                  , resourceExists       : Nothing

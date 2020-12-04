@@ -4,6 +4,7 @@ module Stetson.WebSocket ( handler
                          , info
                          , self
                          , initResult
+                         , terminate
                          , module Exports
   ) where
 
@@ -34,6 +35,10 @@ handle fn (StetsonHandler h) =
 info :: forall msg state.  WebSocketInfoHandler msg state -> StetsonHandler msg state -> StetsonHandler msg state
 info fn (StetsonHandler h) =
   StetsonHandler $ h { wsInfo = Just fn  }
+
+-- | Add a terminate callback to the provided StetsonHandler
+terminate :: forall msg state. (Foreign -> Req -> state -> Effect Unit) -> StetsonHandler msg state -> StetsonHandler msg state
+terminate fn (StetsonHandler h) = (StetsonHandler $ h { terminate = Just fn })
 
 initResult :: forall state. Req -> state -> Effect (InitResult state)
 initResult rq st = pure $ WebSocket rq st

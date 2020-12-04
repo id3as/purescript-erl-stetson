@@ -17,6 +17,7 @@ module Stetson.Rest ( handler
                     , previouslyExisted
                     , switchHandler
                     , forbidden
+                    , terminate
                     , initResult
                     , result
                     , stop
@@ -28,6 +29,7 @@ module Stetson.Rest ( handler
 import Prelude
 
 import Data.Maybe (Maybe(..))
+import Foreign (Foreign)
 import Effect (Effect)
 import Erl.Cowboy.Handlers.Rest (MovedResult, switchHandler)
 import Erl.Cowboy.Req (Req)
@@ -95,6 +97,10 @@ allowMissingPost fn (StetsonHandler h) = (StetsonHandler $ h { allowMissingPost 
 forbidden :: forall msg state. (Req -> state -> Effect (RestResult Boolean state)) -> StetsonHandler msg state -> StetsonHandler msg state
 forbidden fn (StetsonHandler h) = (StetsonHandler $ h { forbidden = Just fn })
 
+-- | Add a terminate callback to the provided StetsonHandler
+terminate :: forall msg state. (Foreign -> Req -> state -> Effect Unit) -> StetsonHandler msg state -> StetsonHandler msg state
+terminate fn (StetsonHandler h) = (StetsonHandler $ h { terminate = Just fn })
+
 -- | Create an init response for return from an InitHandler
 initResult :: forall msg state. Req -> state -> Effect (InitResult state)
 initResult rq st = pure $ Rest rq st
@@ -131,6 +137,7 @@ preHook' :: forall msg state.
              -> StetsonHandler msg state -> StetsonHandler msg state
 preHook' hook (StetsonHandler state) =
   StetsonHandler { init: state.init
+                 , terminate            : state.terminate
                  , allowedMethods       : hook "allowedMethods"       <$> state.allowedMethods
                  , malformedRequest     : hook "malformedRequest"     <$> state.malformedRequest
                  , resourceExists       : hook "resourceExists"       <$> state.resourceExists

@@ -3,6 +3,7 @@ module Stetson.Loop ( handler
                     , info
                     , self
                     , initResult
+                    , terminate
                     , module Exports
   ) where
 
@@ -28,6 +29,10 @@ init fn (StetsonHandler h) =
 info :: forall msg state.  LoopInfoHandler msg state -> StetsonHandler msg state -> StetsonHandler msg state
 info fn (StetsonHandler h) =
   StetsonHandler $ h { loopInfo = Just fn  }
+
+-- | Add a terminate callback to the provided StetsonHandler
+terminate :: forall msg state. (Foreign -> Req -> state -> Effect Unit) -> StetsonHandler msg state -> StetsonHandler msg state
+terminate fn (StetsonHandler h) = (StetsonHandler $ h { terminate = Just fn })
 
 self :: forall msg. State.StateT (Process msg) Effect (Process msg)
 self = State.get
