@@ -2,32 +2,30 @@ module Stetson.HandlerProxy where
 
 import Prelude
 
-import Data.Compactable (applyMaybe)
-import Data.Maybe (Maybe(..), fromMaybe)
-import Effect (Effect)
-import Effect.Uncurried (mkEffectFn1, mkEffectFn2, mkEffectFn3)
-import Erl.Process.Raw (Pid, send)
-import Erl.Process (Process(..))
+import Control.Monad.State (evalStateT)
 import Foreign (Foreign)
-import Stetson (InitResult(..), WebSocketCallResult(..))
-import Unsafe.Coerce (unsafeCoerce)
+import Data.FunctorWithIndex (mapWithIndex)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Data.Tuple (Tuple(..))
 import Effect.Uncurried (EffectFn2, mkEffectFn2, EffectFn3)
 import Control.Monad.State ( evalStateT )
 import Erl.Atom (atom, Atom(..))
-import Erl.Cowboy.Handlers.Rest (RestResult, restResult, stop, switchHandler) as Cowboy
-import Erl.Cowboy.Req (Req)
-import Erl.Data.List (List, mapWithIndex, nil, (!!))
-import Erl.Data.Tuple (tuple2, uncurry2)
-import Stetson.Types (Authorized(..), InitResult(..), StetsonHandlerCallbacks(..), RestResult(..), InitHandler, CowboyHandler(..), LoopCallResult(..), LoopInitHandler(..), LoopInternalState(..), WebSocketInternalState(..))
-import Erl.ModuleName (NativeModuleName(..))
-import Unsafe.Coerce (unsafeCoerce)
-
-import Erl.Cowboy.Handlers.WebSocket as CowboyWS
+import Effect.Uncurried (EffectFn2, mkEffectFn1, mkEffectFn2, mkEffectFn3)
+import Erl.Atom (atom)
 import Erl.Cowboy.Handlers.Loop as CowboyLoop
+import Erl.Cowboy.Handlers.Rest (RestResult, restResult, stop, switchHandler) as Cowboy
 import Erl.Cowboy.Handlers.Rest as CowboyRest
+import Erl.Cowboy.Handlers.WebSocket as CowboyWS
+import Erl.Cowboy.Req (Req)
+import Erl.Data.List (List, nil, (!!))
+import Erl.Data.Tuple (tuple2, uncurry2)
+import Erl.ModuleName (NativeModuleName(..))
+import Erl.Process (Process(..))
+import Erl.Process.Raw (Pid, send)
+import Stetson (WebSocketCallResult(..))
+import Stetson.Types (Authorized(..), CowboyHandler(..), InitResult(..), LoopCallResult(..), LoopInternalState, RestResult(..), StetsonHandlerCallbacks, WebSocketInternalState)
+import Unsafe.Coerce (unsafeCoerce)
 
 foreign import self :: Effect Pid
 foreign import data ElidedInitResult :: Type
@@ -73,31 +71,31 @@ resource_exists = mkEffectFn2 \req state@{ handler } -> do
   call handler.resourceExists req state
 
 allowed_methods :: forall msg state. CowboyRest.AllowedMethodsHandler (State msg state)
-allowed_methods = mkEffectFn2 \req state@{ handler, innerState } -> do
+allowed_methods = mkEffectFn2 \req state@{ handler } -> do
   callMap (map show) handler.allowedMethods req state
 
 malformed_request :: forall msg state. CowboyRest.MalformedRequestHandler (State msg state)
-malformed_request = mkEffectFn2 \req state@{ handler, innerState } -> do
+malformed_request = mkEffectFn2 \req state@{ handler } -> do
   call handler.malformedRequest req state
 
 previously_existed :: forall msg state. CowboyRest.PreviouslyExistedHandler (State msg state)
-previously_existed = mkEffectFn2 \req state@{ handler, innerState } -> do
+previously_existed = mkEffectFn2 \req state@{ handler } -> do
   call handler.previouslyExisted req state
 
 allow_missing_post :: forall msg state. CowboyRest.PreviouslyExistedHandler (State msg state)
-allow_missing_post = mkEffectFn2 \req state@{ handler, innerState } -> do
+allow_missing_post = mkEffectFn2 \req state@{ handler } -> do
   call handler.allowMissingPost req state
 
 moved_permanently :: forall msg state. CowboyRest.MovedPermanentlyHandler (State msg state)
-moved_permanently = mkEffectFn2 \req state@{ handler, innerState } -> do
+moved_permanently = mkEffectFn2 \req state@{ handler } -> do
   call handler.movedPermanently req state
 
 moved_temporarily :: forall msg state. CowboyRest.MovedTemporarilyHandler (State msg state)
-moved_temporarily = mkEffectFn2 \req state@{ handler, innerState } -> do
+moved_temporarily = mkEffectFn2 \req state@{ handler } -> do
   call handler.movedTemporarily req state
 
 service_available :: forall msg state. CowboyRest.ServiceAvailableHandler (State msg state)
-service_available = mkEffectFn2 \req state@{ handler, innerState } -> do
+service_available = mkEffectFn2 \req state@{ handler } -> do
   call handler.serviceAvailable req state
 
 is_authorized :: forall msg state. CowboyRest.IsAuthorizedHandler (State msg state)
@@ -133,8 +131,8 @@ content_types_accepted = mkEffectFn2 \req state@{ handler, innerState } ->
             RestSwitch handler rq st -> switchHandler handler rq (state { innerState = st })
             RestOk callbacks req2 innerState2 ->
               let
-                fns = map (\tuple -> uncurry2 (\ct fn -> fn) tuple) callbacks
-                atoms = mapWithIndex (\tuple i -> uncurry2 (\ct _ -> tuple2 (CowboyRest.SimpleContentType ct) $ CowboyRest.AcceptCallback $ atom $ "accept_" <> show i) tuple) callbacks
+                fns = map (\tuple -> uncurry2 (\_ fn -> fn) tuple) callbacks
+                atoms = mapWithIndex (\i tuple -> uncurry2 (\ct _ -> tuple2 (CowboyRest.SimpleContentType ct) $ CowboyRest.AcceptCallback $ atom $ "accept_" <> show i) tuple) callbacks
               in
                 pure $ Cowboy.restResult (CowboyRest.contentTypesAcceptedResult atoms) (state { innerState = innerState2, acceptHandlers = fns }) req2
             RestStop req2 innerState2 ->
@@ -152,8 +150,8 @@ content_types_provided = mkEffectFn2 \req state@{ handler, innerState } ->
             RestSwitch handler rq st -> switchHandler handler rq (state { innerState = st })
             RestOk callbacks req2 innerState2 ->
               let
-                fns = map (\tuple -> uncurry2 (\ct fn -> fn) tuple) callbacks
-                atoms = mapWithIndex (\tuple i -> uncurry2 (\ct _ -> tuple2 (CowboyRest.SimpleContentType ct) $ CowboyRest.ProvideCallback $ atom $ "provide_" <> show i) tuple) callbacks
+                fns = map (\tuple -> uncurry2 (\_ fn -> fn) tuple) callbacks
+                atoms = mapWithIndex (\i tuple -> uncurry2 (\ct _ -> tuple2 (CowboyRest.SimpleContentType ct) $ CowboyRest.ProvideCallback $ atom $ "provide_" <> show i) tuple) callbacks
               in
                 pure $ Cowboy.restResult (CowboyRest.contentTypesProvidedResult atoms) (state { innerState = innerState2, provideHandlers = fns }) req2
             RestStop req2 innerState2 ->
@@ -165,7 +163,7 @@ callMap mapFn fn req state = restResult state $ map (mapReply mapFn) $ fn <*> pu
 call :: forall msg state reply. Maybe (Req -> state -> Effect (RestResult reply state)) -> Req -> State msg state -> Effect (Cowboy.RestResult reply (State msg state))
 call fn req state = restResult state $ fn <*> pure req <*> pure state.innerState
 
-mapReply :: forall msg state reply mappedReply. (reply -> mappedReply) -> Effect (RestResult reply state) -> Effect (RestResult mappedReply state)
+mapReply :: forall state reply mappedReply. (reply -> mappedReply) -> Effect (RestResult reply state) -> Effect (RestResult mappedReply state)
 mapReply mapFn org = do
   orgResult <- org
   case orgResult of
@@ -186,7 +184,7 @@ restResult outerState (Just callback) = do
 -- This is an internal Cowboy detail, and we *must not* use the value from this once we've returned it
 -- Cowboy may not support this in the future, but hopefully it will - essentially it means that
 -- The function is entirely ignored and is therefore treated as optional
-restResult outerState Nothing = noCall
+restResult _ Nothing = noCall
 
 noCall :: forall t3 t4. Applicative t3 => t3 t4
 noCall = pure $ unsafeCoerce (atom "no_call")
@@ -253,8 +251,7 @@ wsState = Process <$> self
 websocket_init :: forall msg state. CowboyWS.WSInitHandler (State msg state)
 websocket_init = mkEffectFn1 \state -> do
   case state of
-    { innerState, handler: { wsInit: Just wsInit }} -> do
-      pid <- self
+    { innerState, handler: { wsInit: Just wsInit }} ->
       transformWsResult state =<< evalStateT (wsInit innerState) =<< wsState
     _ ->
       pure $ CowboyWS.okResult state
@@ -313,7 +310,7 @@ transformLoopResult state result =
        LoopStop req innerState ->  pure $ CowboyLoop.stop state { innerState = innerState } req
 
 applyLoopInit :: forall msg state. StetsonHandlerCallbacks msg state -> Req -> state -> Effect state
-applyLoopInit { loopInit: Nothing } req state = pure state
+applyLoopInit { loopInit: Nothing } _req state = pure state
 applyLoopInit { loopInit: Just loopInit } req state = do
   evalStateT (loopInit req state) =<< loopState
 
@@ -321,10 +318,11 @@ applyLoopInit { loopInit: Just loopInit } req state = do
 --- Switching
 ---
 switchHandler :: forall reply msg state. CowboyHandler -> Req -> State msg state -> Effect (Cowboy.RestResult reply (State msg state))
-switchHandler RestHandler req state@{ innerState } =
+switchHandler RestHandler req state =
   pure $ Cowboy.switchHandler (NativeModuleName $ atom "cowboy_rest") state req
-switchHandler WebSocketHandler req state@{ innerState } =
+switchHandler WebSocketHandler req state =
   pure $ Cowboy.switchHandler (NativeModuleName $ atom "cowboy_websocket") state req
 switchHandler LoopHandler req state@{ innerState, handler } = do
   innerState2 <- applyLoopInit handler req innerState
   pure $ Cowboy.switchHandler (NativeModuleName $ atom "cowboy_loop") (state { innerState = innerState2 }) req
+  

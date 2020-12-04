@@ -2,13 +2,12 @@ module Stetson.Routing where
 
 import Prelude
 
-import Data.Exists (mkExists)
 import Data.Generic.Rep (Argument(..), Constructor(..), NoArguments(..), Product(..), Sum(..))
 import Data.Symbol (class IsSymbol, SProxy(..))
 import Prim.Row as Row
 import Record as Record
 import Stetson.Rest as Rest
-import Stetson.Types
+import Stetson.Types (CowboyRoutePlaceholder, InitResult(..), RouteHandler(..), StaticAssetLocation, StetsonHandler, mkStetsonRoute)
 
 class GDispatch rep (r :: # Type) | rep -> r where
   gDispatch :: { | r } -> rep -> RouteHandler
@@ -54,7 +53,7 @@ instance gDispatchCN ::
   gDispatchC handler (Product (Argument a) right) = gDispatchC (handler a) right
 
 instance gDispatchCowboy :: GDispatchCtor any CowboyRoutePlaceholder where
-  gDispatchC route anything = CowboyRouteFallthrough
+  gDispatchC _route _ = CowboyRouteFallthrough
 
 dummyHandler :: StetsonHandler Unit Unit
 dummyHandler = Rest.handler (\req -> pure $ Rest req unit)

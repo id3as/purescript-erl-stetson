@@ -33,6 +33,7 @@ module Stetson.Types ( RestResult(..)
 
 import Prelude
 
+import Foreign (Foreign)
 import Data.Exists (mkExists, runExists, Exists)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
@@ -44,8 +45,7 @@ import Erl.Process (Process)
 import Erl.Data.List (List)
 import Erl.Data.Tuple (Tuple2, Tuple4)
 import Erl.ModuleName (NativeModuleName)
-import Foreign (Foreign)
-import Control.Monad.State (State, StateT)
+import Control.Monad.State (StateT)
 import Routing.Duplex (RouteDuplex')
 
 foreign import data HandlerArgs :: Type
@@ -190,6 +190,7 @@ data CowboyRoutePlaceholder = CowboyRoutePlaceholder
 
 newtype StetsonRouteInner a = StetsonRouteInner (Exists (StetsonHandler a))
 
+mkStetsonRoute :: forall a s. StetsonHandler a s -> Exists StetsonRouteInner
 mkStetsonRoute r = mkExists (StetsonRouteInner $ mkExists r)
 
 runStetsonRoute :: forall z. (forall b c. StetsonHandler b c -> z) -> Exists StetsonRouteInner -> z

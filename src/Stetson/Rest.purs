@@ -31,11 +31,11 @@ import Prelude
 import Data.Maybe (Maybe(..))
 import Foreign (Foreign)
 import Effect (Effect)
-import Erl.Cowboy.Handlers.Rest (MovedResult, switchHandler)
+import Erl.Cowboy.Handlers.Rest (MovedResult)
 import Erl.Cowboy.Req (Req)
 import Erl.Data.List (List)
 import Erl.Data.Tuple (Tuple2)
-import Stetson.Types (AcceptHandler, Authorized, CowboyHandler, HttpMethod, InitHandler, InitResult(..), ProvideHandler, RestResult(..), StetsonHandler, StetsonHandler(..), emptyHandler)
+import Stetson.Types (AcceptHandler, Authorized, CowboyHandler, HttpMethod, InitHandler, InitResult(..), ProvideHandler, RestResult(..), StetsonHandler(..), emptyHandler)
 
 -- | Create a cowboy REST handler with the provided Init handler and no callbacks defined
 handler :: forall state. InitHandler state -> StetsonHandler Unit state
@@ -102,7 +102,7 @@ terminate :: forall msg state. (Foreign -> Req -> state -> Effect Unit) -> Stets
 terminate fn (StetsonHandler h) = (StetsonHandler $ h { terminate = Just fn })
 
 -- | Create an init response for return from an InitHandler
-initResult :: forall msg state. Req -> state -> Effect (InitResult state)
+initResult :: forall state. Req -> state -> Effect (InitResult state)
 initResult rq st = pure $ Rest rq st
 
 -- | Create a rest response for return from a rest callback

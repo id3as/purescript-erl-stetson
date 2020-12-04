@@ -9,13 +9,13 @@ module Stetson.Loop ( handler
 
 import Prelude
 
+import Foreign (Foreign)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Erl.Process  (Process)
 import Control.Monad.State as State
 import Erl.Cowboy.Req (Req)
-import Foreign (Foreign)
-import Stetson.Types (InitHandler, InitResult(..), WebSocketHandleHandler, StetsonHandler(..), LoopInfoHandler, LoopInitHandler, emptyHandler, LoopInternalState(..))
+import Stetson.Types (InitHandler, InitResult(..), LoopInfoHandler, LoopInitHandler, StetsonHandler(..), emptyHandler)
 
 import Control.Monad.Trans.Class (lift) as Exports
 

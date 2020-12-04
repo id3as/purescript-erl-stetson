@@ -18,7 +18,6 @@ import Prelude
 
 import Cowboy.Static as CowboyStatic
 import Data.Either (Either(..))
-import Data.Exists (mkExists, runExists)
 import Data.Generic.Rep (class Generic, NoArguments, from)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
@@ -42,7 +41,7 @@ import RoutingDuplexMiddleware as RoutingMiddleware
 import Stetson.ModuleNames as ModuleNames
 import Stetson.Routing (class GDispatch, gDispatch)
 import Stetson.Routing as Routing
-import Stetson.Types (AcceptHandler, Authorized(..), HandlerArgs, HttpMethod(..), InitHandler, InitResult(..), ProvideHandler, RestResult(..), RouteHandler(..), StaticAssetLocation(..), StetsonConfig, StetsonHandler, WebSocketCallResult(..), WebSocketHandleHandler, WebSocketInfoHandler, WebSocketInitHandler, runStetsonRoute, mkStetsonRoute, emptyHandler, CowboyHandler(..), LoopCallResult(..), StetsonHandler(..), SimpleStetsonHandler(..))
+import Stetson.Types (AcceptHandler, Authorized(..), CowboyHandler(..), HandlerArgs, HttpMethod(..), InitHandler, InitResult(..), LoopCallResult(..), ProvideHandler, RestResult(..), RouteHandler(..), SimpleStetsonHandler, StaticAssetLocation(..), StetsonConfig, StetsonHandler(..), WebSocketCallResult(..), WebSocketHandleHandler, WebSocketInfoHandler, WebSocketInitHandler, emptyHandler, mkStetsonRoute, runStetsonRoute)
 import Unsafe.Coerce (unsafeCoerce)
 
 -- | Creates a blank stetson config with default settings and no routes
