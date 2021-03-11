@@ -1,7 +1,6 @@
 module Stetson.Routing where
 
 import Prelude
-
 import Data.Generic.Rep (Argument(..), Constructor(..), NoArguments(..), Product(..), Sum(..))
 import Data.Symbol (class IsSymbol, SProxy(..))
 import Prim.Row as Row
@@ -17,38 +16,39 @@ instance gDispatchSum ::
   , GDispatch b r
   ) =>
   GDispatch (Sum a b) r where
-  gDispatch r (Inl a) = gDispatch r a 
-  gDispatch r (Inr b) = gDispatch r b 
-    
+  gDispatch r (Inl a) = gDispatch r a
+  gDispatch r (Inr b) = gDispatch r b
+
 instance gDispatchConstructor ::
   ( IsSymbol sym
   , Row.Cons sym h rx r
   , GDispatchCtor c h
   ) =>
   GDispatch (Constructor sym c) r where
-    gDispatch r (Constructor rep) = gDispatchC handler rep 
-      where
-      handler = Record.get (SProxy :: SProxy sym) r
+  gDispatch r (Constructor rep) = gDispatchC handler rep
+    where
+    handler = Record.get (SProxy :: SProxy sym) r
 
 class GDispatchCtor rep f where
   gDispatchC :: f -> rep -> RouteHandler
 
 instance gDispatchC0 :: GDispatchCtor NoArguments (StetsonHandler x s) where
   gDispatchC handler NoArguments = StetsonRoute (mkStetsonRoute handler)
+
 instance gDispatchStatic :: GDispatchCtor NoArguments StaticAssetLocation where
   gDispatchC route NoArguments = StaticRoute [] route
 
 instance gDispatchC1 :: GDispatchCtor (Argument a) (a -> (StetsonHandler x s)) where
   gDispatchC handler (Argument a) = StetsonRoute (mkStetsonRoute (handler a))
+
 instance gDispatchStatic1 :: GDispatchCtor (Argument (Array String)) StaticAssetLocation where
   gDispatchC route (Argument a) = StaticRoute a route
 else instance gDispatchStatic1Ignore :: GDispatchCtor (Argument a) (a -> StaticAssetLocation) where
   gDispatchC route (Argument a) = StaticRoute [] (route a)
 
-
-instance gDispatchCN :: 
+instance gDispatchCN ::
   ( GDispatchCtor right b
-  ) => 
+    ) =>
   GDispatchCtor (Product (Argument a) right) (a -> b) where
   gDispatchC handler (Product (Argument a) right) = gDispatchC (handler a) right
 
