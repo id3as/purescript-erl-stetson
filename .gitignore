@@ -1,3 +1,9 @@
 output/
 .psc-package/
 .psc-ide-port
+.spago/
+node_modules/
+ebin/
+package-lock.json
+erl_crash.dump
+settings.json

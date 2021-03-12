@@ -41,12 +41,14 @@ import Erl.Cowboy.Handlers.Rest (MovedResult)
 import Erl.Cowboy.Handlers.WebSocket (Frame)
 import Erl.Cowboy.Req (Req)
 import Erl.Cowboy.Routes as Routes
-import Erl.Process (Process)
 import Erl.Data.List (List)
 import Erl.Data.Tuple (Tuple2, Tuple4)
 import Erl.ModuleName (NativeModuleName)
-import Control.Monad.State (StateT)
+import Erl.Process (Process)
+import Foreign (Foreign)
+import Prim.Row (class Union)
 import Routing.Duplex (RouteDuplex')
+import Stetson.Utils (unsafeMergeOptional)
 
 foreign import data HandlerArgs :: Type
 
@@ -100,8 +102,7 @@ type SimpleStetsonHandler state
 
 -- | The built record containing callbacks for any sort of request
 type StetsonHandlerCallbacks msg state
-  = { -- Shared
-      init :: Req -> Effect (InitResult state)
+  = { init :: Req -> Effect (InitResult state)
     , terminate :: Maybe (Foreign -> Req -> state -> Effect Unit)
     -- Rest
     , allowedMethods :: Maybe (Req -> state -> Effect (RestResult (List HttpMethod) state))
@@ -227,6 +228,11 @@ data RouteHandler
   | StaticRoute (Array String) StaticAssetLocation
   | CowboyRouteFallthrough
 
+type RouteConfig a
+  = { routing :: RouteDuplex' a
+    , dispatch :: a -> RouteHandler
+    }
+
 -- Probably want to make this look a bit more like Cowboy's config internally
 -- Lists of maps or tuples or whatever the hell cowboy is using in whatever version we're bound to
 type StetsonConfig a
@@ -235,8 +241,7 @@ type StetsonConfig a
     , streamHandlers :: Maybe (List NativeModuleName)
     , middlewares :: Maybe (List NativeModuleName)
     , cowboyRoutes :: List Routes.Path
-    , routing :: RouteDuplex' a
-    , dispatch :: a -> RouteHandler
+    , routes :: RouteConfig a
     }
 
 emptyHandler :: forall msg state. InitHandler state -> StetsonHandler msg state
@@ -264,3 +269,76 @@ emptyHandler init =
     , loopInit: Nothing
     , loopInfo: Nothing
     }
+
+type Unlift a
+  = a
+
+type RouteHandler2 msg state
+  = Config state (OptionalConfig Maybe msg state)
+
+type RequestHandler f resultType state
+  = f (Req -> state -> Effect (RestResult resultType state))
+
+type Config state r
+  = { init :: Req -> Effect (InitResult state)
+    | r
+    }
+
+type OptionalConfig f msg state
+  = ( allowedMethods :: RequestHandler f (List HttpMethod) state
+    , allowMissingPost :: RequestHandler f Boolean state
+    , contentTypesAccepted :: RequestHandler f (List (Tuple2 String (AcceptHandler state))) state
+    , contentTypesProvided :: RequestHandler f (List (Tuple2 String (ProvideHandler state))) state
+    , deleteResource :: RequestHandler f Boolean state
+    , forbidden :: RequestHandler f Boolean state
+    , isAuthorized :: RequestHandler f Authorized state
+    , isConflict :: RequestHandler f Boolean state
+    , loopInfo :: f (LoopInfoHandler msg state)
+    , loopInit :: f (LoopInitHandler msg state)
+    , malformedRequest :: RequestHandler f Boolean state
+    , movedPermanently :: RequestHandler f MovedResult state
+    , movedTemporarily :: RequestHandler f MovedResult state
+    , previouslyExisted :: RequestHandler f Boolean state
+    , resourceExists :: RequestHandler f Boolean state
+    , serviceAvailable :: RequestHandler f Boolean state
+    , terminate :: f (Foreign -> Req -> state -> Effect Unit)
+    , wsHandle :: f (WebSocketHandleHandler msg state)
+    , wsInfo :: f (WebSocketInfoHandler msg state)
+    , wsInit :: f (WebSocketInitHandler msg state)
+    )
+
+type RouteHandlerFactory msg state
+  = forall options trash.
+    Union options trash (OptionalConfig Unlift msg state) =>
+    Config state options ->
+    RouteHandler2 msg state
+
+defaults :: forall msg state. Record (OptionalConfig Maybe msg state)
+defaults =
+  { allowedMethods: Nothing
+  , allowMissingPost: Nothing
+  , contentTypesAccepted: Nothing
+  , contentTypesProvided: Nothing
+  , deleteResource: Nothing
+  , forbidden: Nothing
+  , isAuthorized: Nothing
+  , isConflict: Nothing
+  , loopInfo: Nothing
+  , loopInit: Nothing
+  , malformedRequest: Nothing
+  , movedPermanently: Nothing
+  , movedTemporarily: Nothing
+  , previouslyExisted: Nothing
+  , resourceExists: Nothing
+  , serviceAvailable: Nothing
+  , terminate: Nothing
+  , wsHandle: Nothing
+  , wsInfo: Nothing
+  , wsInit: Nothing
+  }
+
+routeHandler ::
+  forall optional trash msg state.
+  Union optional trash (OptionalConfig Unlift msg state) =>
+  Config state optional -> StetsonHandler msg state
+routeHandler config = StetsonHandler $ unsafeMergeOptional defaults config

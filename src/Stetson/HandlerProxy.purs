@@ -191,8 +191,7 @@ restResult outerState (Just callback) = do
   case result of
     RestSwitch handler rq st -> switchHandler handler rq (outerState { innerState = st })
     RestOk re rq st -> pure $ Cowboy.restResult re (outerState { innerState = st }) rq
-    RestStop rq st -> do
-      pure $ Cowboy.stop (outerState { innerState = st }) rq
+    RestStop rq st -> pure $ Cowboy.stop (outerState { innerState = st }) rq
 
 -- This is an internal Cowboy detail, and we *must not* use the value from this once we've returned it
 -- Cowboy may not support this in the future, but hopefully it will - essentially it means that

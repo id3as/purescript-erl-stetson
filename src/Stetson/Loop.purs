@@ -1,34 +1,30 @@
-module Stetson.Loop ( handler
-                    , init
-                    , info
-                    , self
-                    , initResult
-                    , terminate
-                    , module Exports
+module Stetson.Loop
+  ( self
+  , initResult
+  , init
+  , handler
+  , info
+  , module Exports
   ) where
 
 import Prelude
-
-import Foreign (Foreign)
+import Control.Monad.State as State
+import Control.Monad.Trans.Class (lift) as Exports
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import Erl.Process  (Process)
-import Control.Monad.State as State
 import Erl.Cowboy.Req (Req)
+import Erl.Process (Process)
+import Foreign (Foreign)
 import Stetson.Types (InitHandler, InitResult(..), LoopInfoHandler, LoopInitHandler, StetsonHandler(..), emptyHandler)
 
-import Control.Monad.Trans.Class (lift) as Exports
-
 handler :: forall msg state. InitHandler state -> StetsonHandler msg state
-handler = emptyHandler 
+handler = emptyHandler
 
-init :: forall msg state.  LoopInitHandler msg state -> StetsonHandler msg state -> StetsonHandler msg state
-init fn (StetsonHandler h) =
-  StetsonHandler $ h { loopInit = Just fn  }
+init :: forall msg state. LoopInitHandler msg state -> StetsonHandler msg state -> StetsonHandler msg state
+init fn (StetsonHandler h) = StetsonHandler $ h { loopInit = Just fn }
 
-info :: forall msg state.  LoopInfoHandler msg state -> StetsonHandler msg state -> StetsonHandler msg state
-info fn (StetsonHandler h) =
-  StetsonHandler $ h { loopInfo = Just fn  }
+info :: forall msg state. LoopInfoHandler msg state -> StetsonHandler msg state -> StetsonHandler msg state
+info fn (StetsonHandler h) = StetsonHandler $ h { loopInfo = Just fn }
 
 -- | Add a terminate callback to the provided StetsonHandler
 terminate :: forall msg state. (Foreign -> Req -> state -> Effect Unit) -> StetsonHandler msg state -> StetsonHandler msg state

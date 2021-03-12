@@ -5,26 +5,38 @@ OUTPUT = output
 PS_SOURCEFILES = $(shell find ${PS_SRC} -type f -name \*.purs)
 PS_ERL_FFI = $(shell find ${PS_SRC} -type f -name \*.erl)
 
-PACKAGE_SET = $(shell jq '.set' < psc-package.json)
-ERL_MODULES_VERSION = $(shell jq '."erl-modules".version' < .psc-package/$(PACKAGE_SET)/.set/packages.json)
 
-all: output docs
+all: src/compiled_ps docs
 
-output: $(PS_SOURCEFILES) $(PS_ERL_FFI) .psc-package
-	.psc-package/${PACKAGE_SET}/erl-modules/${ERL_MODULES_VERSION}/scripts/gen_module_names.sh src/Stetson Stetson.ModuleNames
-	psc-package sources | xargs purs compile '$(PS_SRC)/**/*.purs'
-	@touch output
+src/compiled_ps: output/.complete
+	rm -f $$PWD/src/compiled_ps
+	ln -s $$PWD/output $$PWD/src/compiled_ps
 
-docs: $(PS_SOURCEFILES) $(PS_ERL_FFI) .psc-package
+output/.complete: $(PS_SOURCEFILES) $(PS_ERL_FFI) .spago
+	echo Stuff updated, running spago
+	spago build && touch output/.complete
+	spago build --config test.dhall
+
+docs: $(PS_SOURCEFILES) $(PS_ERL_FFI)
 	mkdir -p docs
-	psc-package sources | xargs purs docs '$(PS_SRC)/**/*.purs' \
+	purs docs '$(PS_SRC)/**/*.purs' \
 		--docgen Stetson:docs/Stetson.md \
-		--docgen Stetson.Rest:docs/Stetson.Rest.md 
+		--docgen Stetson.Rest:docs/Stetson.Rest.md
 	touch docs
 
-.psc-package: psc-package.json
-	psc-package install
-	touch .psc-package
+.spago: spago.dhall packages.dhall
+	spago install
+	touch .spago
 
 clean:
 	rm -rf $(OUTPUT)/*
+
+testbuild: test.dhall
+	spago build --config test.dhall
+
+test: testbuild erl
+	erl -pa ebin -pa cowboy/ebin -noshell -eval '(test_main@ps:main())()' -eval 'init:stop()'
+
+erl:
+	mkdir -p ebin
+	erlc -o ebin/ output/*/*.erl

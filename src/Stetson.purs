@@ -4,6 +4,7 @@ module Stetson
   ( configure
   , cowboyRoutes
   , routes
+  , routes2
   , port
   , bindTo
   , streamHandlers
@@ -29,7 +30,7 @@ import Erl.Data.List (List, nil, null, reverse, singleton, (:))
 import Erl.Data.List as List
 import Erl.Data.Map (Map)
 import Erl.Data.Map as Map
-import Erl.Data.Tuple (tuple2, tuple3, tuple4)
+import Erl.Data.Tuple (Tuple2(..), tuple2, tuple3, tuple4)
 import Erl.ModuleName (NativeModuleName(..), nativeModuleName)
 import Foreign (Foreign, unsafeToForeign)
 import Routing.Duplex (RouteDuplex', root)
@@ -39,7 +40,7 @@ import RoutingDuplexMiddleware as RoutingMiddleware
 import Stetson.ModuleNames as ModuleNames
 import Stetson.Routing (class GDispatch, gDispatch)
 import Stetson.Routing as Routing
-import Stetson.Types (AcceptHandler, Authorized(..), CowboyHandler(..), HandlerArgs, HttpMethod(..), InitHandler, InitResult(..), LoopCallResult(..), ProvideHandler, RestResult(..), RouteHandler(..), SimpleStetsonHandler, StaticAssetLocation(..), StetsonConfig, StetsonHandler(..), WebSocketCallResult(..), WebSocketHandleHandler, WebSocketInfoHandler, WebSocketInitHandler, emptyHandler, mkStetsonRoute, runStetsonRoute)
+import Stetson.Types (AcceptHandler, Authorized(..), CowboyHandler(..), HandlerArgs, HttpMethod(..), InitHandler, InitResult(..), LoopCallResult(..), ProvideHandler, RestResult(..), RouteHandler(..), SimpleStetsonHandler, StaticAssetLocation(..), StetsonConfig, StetsonHandler(..), WebSocketCallResult(..), WebSocketHandleHandler, WebSocketInfoHandler, WebSocketInitHandler, RouteConfig, emptyHandler, mkStetsonRoute, runStetsonRoute)
 import Unsafe.Coerce (unsafeCoerce)
 
 -- | Creates a blank stetson config with default settings and no routes
@@ -55,8 +56,10 @@ configure =
             : nil
         )
   , cowboyRoutes: nil
-  , routing: root noArgs
-  , dispatch: \_ -> StetsonRoute $ mkStetsonRoute Routing.dummyHandler
+  , routes:
+      { routing: root noArgs
+      , dispatch: \_ -> StetsonRoute $ mkStetsonRoute Routing.dummyHandler
+      }
   }
   where
   mod :: String -> NativeModuleName
@@ -67,7 +70,18 @@ routes ::
   Generic a rep =>
   GDispatch rep r =>
   RouteDuplex' a -> { | r } -> StetsonConfig b -> StetsonConfig a
-routes routing d config = config { routing = routing, dispatch = dispatchTable d }
+routes routing d config = config { routes = { routing: routing, dispatch: dispatchTable d } }
+  where
+  dispatchTable ::
+    { | r } -> a -> RouteHandler
+  dispatchTable r a = gDispatch r (from a)
+
+routes2 ::
+  forall a rep r.
+  Generic a rep =>
+  GDispatch rep r =>
+  RouteDuplex' a -> { | r } -> RouteConfig a
+routes2 routing d = { routing: routing, dispatch: dispatchTable d }
   where
   dispatchTable ::
     { | r } -> a -> RouteHandler
@@ -78,7 +92,7 @@ routes routing d config = config { routing = routing, dispatch = dispatchTable d
 --                               , moduleName: (nativeModuleName ModuleNames.stetsonWebSocketHandler)
 --                               , args: unsafeCoerce handler
 --                               } : routes) })
--- | Introduce a list of native Erlang cowboy handlers to this config
+-- | Introduce a list of native Erlang cowboy handlers to this confige
 cowboyRoutes :: forall a. List Path -> StetsonConfig a -> StetsonConfig a
 cowboyRoutes newRoutes config@{ cowboyRoutes: existingRoutes } = (config { cowboyRoutes = reverse newRoutes <> existingRoutes })
 
