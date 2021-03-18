@@ -1,4 +1,4 @@
-module Test.TestRoutes where
+module Test.Routes where
 
 import Prelude
 import Data.Generic.Rep (class Generic)

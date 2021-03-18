@@ -2,16 +2,11 @@ module Stetson.HandlerProxy where
 
 import Prelude
 import Control.Monad.State (evalStateT)
-import Foreign (Foreign)
 import Data.FunctorWithIndex (mapWithIndex)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import Data.Tuple (Tuple(..))
-import Effect.Uncurried (EffectFn2, mkEffectFn2, EffectFn3)
-import Control.Monad.State (evalStateT)
-import Erl.Atom (atom, Atom(..))
-import Effect.Uncurried (EffectFn2, mkEffectFn1, mkEffectFn2, mkEffectFn3)
-import Erl.Atom (atom)
+import Effect.Uncurried (EffectFn2, EffectFn3, mkEffectFn1, mkEffectFn2, mkEffectFn3)
+import Erl.Atom (atom, Atom)
 import Erl.Cowboy.Handlers.Loop as CowboyLoop
 import Erl.Cowboy.Handlers.Rest (RestResult, restResult, stop, switchHandler) as Cowboy
 import Erl.Cowboy.Handlers.Rest as CowboyRest
@@ -22,6 +17,7 @@ import Erl.Data.Tuple (tuple2, uncurry2)
 import Erl.ModuleName (NativeModuleName(..))
 import Erl.Process (Process(..))
 import Erl.Process.Raw (Pid, send)
+import Foreign (Foreign)
 import Stetson (WebSocketCallResult(..))
 import Stetson.Types (Authorized(..), CowboyHandler(..), InitResult(..), LoopCallResult(..), LoopInternalState, RestResult(..), StetsonHandlerCallbacks, WebSocketInternalState)
 import Unsafe.Coerce (unsafeCoerce)

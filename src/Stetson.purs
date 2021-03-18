@@ -30,7 +30,7 @@ import Erl.Data.List (List, nil, null, reverse, singleton, (:))
 import Erl.Data.List as List
 import Erl.Data.Map (Map)
 import Erl.Data.Map as Map
-import Erl.Data.Tuple (Tuple2(..), tuple2, tuple3, tuple4)
+import Erl.Data.Tuple (tuple2, tuple3, tuple4)
 import Erl.ModuleName (NativeModuleName(..), nativeModuleName)
 import Foreign (Foreign, unsafeToForeign)
 import Routing.Duplex (RouteDuplex', root)
@@ -92,7 +92,7 @@ routes2 routing d = { routing: routing, dispatch: dispatchTable d }
 --                               , moduleName: (nativeModuleName ModuleNames.stetsonWebSocketHandler)
 --                               , args: unsafeCoerce handler
 --                               } : routes) })
--- | Introduce a list of native Erlang cowboy handlers to this confige
+-- | Introduce a list of native Erlang cowboy handlers to this config
 cowboyRoutes :: forall a. List Path -> StetsonConfig a -> StetsonConfig a
 cowboyRoutes newRoutes config@{ cowboyRoutes: existingRoutes } = (config { cowboyRoutes = reverse newRoutes <> existingRoutes })
 
@@ -125,7 +125,7 @@ startClear name config@{ bindAddress, bindPort, streamHandlers: streamHandlers_,
         $ singleton
             ( Env
                 ( Map.empty # Cowboy.dispatch dispatch
-                    # RoutingMiddleware.routes config.routing { dispatch: mapping, unmatched }
+                    # RoutingMiddleware.routes config.routes.routing { dispatch: mapping, unmatched }
                 )
             )
         <> List.fromFoldable (StreamHandlers <$> streamHandlers_)
@@ -138,7 +138,7 @@ startClear name config@{ bindAddress, bindPort, streamHandlers: streamHandlers_,
     else
       CowboyRouterFallback
 
-  mapping req route = case config.dispatch route of
+  mapping req route = case config.routes.dispatch route of
     StetsonRoute inner -> runStetsonRoute (mapRoute req) inner
     StaticRoute pathSegments (PrivDir app dir) ->
       let

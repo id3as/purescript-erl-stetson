@@ -1,83 +1,46 @@
 module Test.Main where
 
 import Prelude
+import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import Test.Handlers (testStetsonConfig, testStetsonConfig2)
+import Erl.Data.Tuple (snd)
+import Pinto.Types (StartLinkResult(..))
+import Test.Assert (assertEqual)
+import Test.Handlers (startLink, stopLink)
+import Test.Requests as Requests
+
+foreign import startup :: Effect Unit
 
 type State
   = Unit
 
 main :: Effect Unit
 main = do
-  -- void $ test_defaultHandler
-  -- void $ test_simpleHandler
-  void $ testStetsonConfig
-  void $ testStetsonConfig2
+  startup
+  legacyResult <- testLegacySyntaxGet
+  assertEqual { actual: legacyResult, expected: Just "{\"handler\":\"fullyLoadedHandler\"}" }
+  currentResult <- testCurrentSyntaxGet
+  assertEqual { actual: currentResult, expected: Just "{\"handler\":\"fullyLoadedHandler\"}" }
   pure $ unit
 
--- test_defaultHandler :: Effect Unit
--- test_defaultHandler =
---   let
---     { allowMissingPost
---     , allowedMethods
---     , contentTypesAccepted
---     , contentTypesProvided
---     , deleteResource
---     , forbidden
---     , init
---     , isAuthorized
---     , isConflict
---     , movedPermanently
---     , movedTemporarily
---     , previouslyExisted
---     , serviceAvailable
---     , terminate
---     } = myHandler
---   in
---     do
---       assert $ isNothing allowMissingPost
---       assert $ isNothing allowedMethods
---       assert $ isNothing contentTypesAccepted
---       assert $ isNothing contentTypesProvided
---       assert $ isNothing deleteResource
---       assert $ isNothing forbidden
---       assert $ isNothing isAuthorized
---       assert $ isNothing isConflict
---       assert $ isNothing movedPermanently
---       assert $ isNothing movedTemporarily
---       assert $ isNothing previouslyExisted
---       assert $ isNothing serviceAvailable
---       assert $ isNothing terminate
--- test_simpleHandler :: Effect Unit
--- test_simpleHandler =
---   let
---     { allowMissingPost
---     , allowedMethods
---     , contentTypesAccepted
---     , contentTypesProvided
---     , deleteResource
---     , forbidden
---     , init
---     , isAuthorized
---     , isConflict
---     , movedPermanently
---     , movedTemporarily
---     , previouslyExisted
---     , serviceAvailable
---     , terminate
---     } = myHandler2
---   in
---     do
---       assert $ isNothing allowMissingPost
---       assert $ isJust allowedMethods
---       assert $ isNothing contentTypesAccepted
---       assert $ isNothing contentTypesProvided
---       assert $ isNothing deleteResource
---       assert $ isNothing forbidden
---       assert $ isNothing isAuthorized
---       assert $ isNothing isConflict
---       assert $ isNothing movedPermanently
---       assert $ isNothing movedTemporarily
---       assert $ isNothing previouslyExisted
---       assert $ isNothing serviceAvailable
---       assert $ isNothing terminate
+testLegacySyntaxGet :: Effect (Maybe String)
+testLegacySyntaxGet = do
+  startLinkResult <- startLink true
+  result <- case startLinkResult of
+    Ok pid -> do
+      result <- Requests.testFullyLoaded 3000
+      pure $ snd result
+    _ -> pure $ Nothing
+  void $ stopLink
+  pure $ result
+
+testCurrentSyntaxGet :: Effect (Maybe String)
+testCurrentSyntaxGet = do
+  startLinkResult <- startLink false
+  result <- case startLinkResult of
+    Ok pid -> do
+      result <- Requests.testFullyLoaded 3001
+      pure $ snd result
+    _ -> pure $ Nothing
+  void $ stopLink
+  pure $ result

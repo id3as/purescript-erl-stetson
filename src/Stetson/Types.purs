@@ -19,7 +19,12 @@ module Stetson.Types
   , CowboyRoutePlaceholder(..)
   , HandlerArgs
   , StetsonConfig
+  , RouteConfig
   , RouteHandler(..)
+  , RouteHandler2(..)
+  , Config(..)
+  , OptionalConfig(..)
+  , RequestHandler(..)
   , StetsonRouteInner
   , CowboyHandler(..)
   , LoopInitHandler(..)
@@ -30,10 +35,11 @@ module Stetson.Types
   , mkStetsonRoute
   , runStetsonRoute
   , emptyHandler
+  , routeHandler
   ) where
 
 import Prelude
-import Foreign (Foreign)
+import Control.Monad.State (StateT)
 import Data.Exists (mkExists, runExists, Exists)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
@@ -104,7 +110,6 @@ type SimpleStetsonHandler state
 type StetsonHandlerCallbacks msg state
   = { init :: Req -> Effect (InitResult state)
     , terminate :: Maybe (Foreign -> Req -> state -> Effect Unit)
-    -- Rest
     , allowedMethods :: Maybe (Req -> state -> Effect (RestResult (List HttpMethod) state))
     , resourceExists :: Maybe (Req -> state -> Effect (RestResult Boolean state))
     , malformedRequest :: Maybe (Req -> state -> Effect (RestResult Boolean state))
@@ -119,11 +124,9 @@ type StetsonHandlerCallbacks msg state
     , previouslyExisted :: Maybe (Req -> state -> Effect (RestResult Boolean state))
     , forbidden :: Maybe (Req -> state -> Effect (RestResult Boolean state))
     , isConflict :: Maybe (Req -> state -> Effect (RestResult Boolean state))
-    -- WebSocket
     , wsInit :: Maybe (WebSocketInitHandler msg state)
     , wsHandle :: Maybe (WebSocketHandleHandler msg state)
     , wsInfo :: Maybe (WebSocketInfoHandler msg state)
-    -- Loop
     , loopInfo :: Maybe (LoopInfoHandler msg state)
     , loopInit :: Maybe (LoopInitHandler msg state)
     }

@@ -8,6 +8,7 @@ You can edit this file as you like.
     , "erl-cowboy"
     , "erl-lists"
     , "erl-maps"
+    , "erl-pinto"
     , "erl-tuples"
     , "routing-duplex"
     , "assert"

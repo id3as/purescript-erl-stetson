@@ -2,8 +2,8 @@ module Test.Handlers where
 
 import Prelude
 import Data.Either (Either(..), either)
+import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import Effect.Class.Console (logShow)
 import Erl.Atom (atom)
 import Erl.Cowboy.Handlers.Rest (notMoved)
 import Erl.Cowboy.Req (ReadBodyResult(..), Req, readBody, setBody)
@@ -13,21 +13,67 @@ import Erl.Data.Binary.IOData (IOData, fromBinary, toBinary)
 import Erl.Data.List (List, (:), nil)
 import Erl.Data.Tuple (Tuple2, tuple2, tuple3)
 import Erl.ModuleName (NativeModuleName(..))
-import Foreign (Foreign, unsafeToForeign)
+import Foreign (unsafeToForeign)
+import Pinto (ServerName(..), StartLinkResult)
+import Pinto.Gen as Gen
 import Simple.JSON (class WriteForeign, readJSON, writeJSON)
 import Stetson (Authorized(..), RestResult, SimpleStetsonHandler, StetsonHandler)
 import Stetson as Stetson
 import Stetson.Rest as Rest
 import Stetson.Types (routeHandler)
-import Test.TestRoutes as TestRoutes
+import Test.Routes as TestRoutes
 import Unsafe.Coerce (unsafeCoerce)
 
-type State
-  = {}
+newtype State
+  = State {}
 
 type HandlerState
-  = { handlerName :: String
+  = { handler :: String
+    , userData :: Maybe String
     }
+
+serverName :: ServerName State Unit
+serverName = Local $ atom "test_server"
+
+startLink :: Boolean -> Effect StartLinkResult
+startLink oldStyle
+  | oldStyle == true = Gen.startLink serverName testStetsonConfig2
+  | otherwise = Gen.startLink serverName testStetsonConfig
+
+stopLink :: Effect Unit
+stopLink = Gen.stop serverName
+
+testStetsonConfig :: Gen.Init State Unit
+testStetsonConfig = do
+  void
+    $ Gen.lift
+    $ Stetson.startClear "http_listener"
+    $ Stetson.configure
+        { routes =
+          Stetson.routes2 TestRoutes.apiRoute
+            { "TestBarebones": bareBonesHandler
+            , "TestFullyLoaded": fullyLoadedHandler
+            }
+        , bindPort = 3001
+        }
+  pure $ State {}
+
+--- Retain the old builder
+testStetsonConfig2 :: Gen.Init State Unit
+testStetsonConfig2 = do
+  void
+    $ Gen.lift
+    $ Stetson.configure
+    # Stetson.routes TestRoutes.apiRoute
+        ( { "TestBarebones": bareBonesHandler
+          , "TestFullyLoaded": fullyLoadedHandler
+          }
+        )
+    # Stetson.port 3000
+    # Stetson.bindTo 0 0 0 0
+    # Stetson.cowboyRoutes cowboyRoutes
+    # Stetson.startClear "http_listener2"
+  pure $ State {}
 
 --- Elementary rest handler
 bareBonesHandler :: StetsonHandler Unit HandlerState
@@ -38,14 +84,14 @@ bareBonesHandler =
     , contentTypesProvided: (\req state -> Rest.result (jsonWriter : nil) req state)
     }
   where
-  initHandler req = Rest.initResult req { handlerName: "bareBonesHandler" }
+  initHandler req = Rest.initResult req { handler: "barebonesHandler", userData: Nothing }
 
 -- Defining everything except loop & ws handlers
 fullyLoadedHandler :: StetsonHandler Unit HandlerState
 fullyLoadedHandler =
   routeHandler
     { init: initHandler
-    , allowedMethods: \req state -> do Rest.result (Stetson.POST : Stetson.HEAD : Stetson.GET : Stetson.OPTIONS : nil) req state
+    , allowedMethods: \req state -> do Rest.result ((Stetson.POST : Stetson.HEAD : Stetson.GET : Stetson.OPTIONS : nil)) req state
     , allowMissingPost: restHandler false
     , deleteResource: \req state -> do Rest.result false req state
     , forbidden: restHandler false
@@ -61,49 +107,20 @@ fullyLoadedHandler =
     , contentTypesProvided: (\req state -> Rest.result (jsonWriter : nil) req state)
     }
   where
-  initHandler req = Rest.initResult req { handlerName: "fullyLoadedHandler" }
+  initHandler req = Rest.initResult req { handler: "fullyLoadedHandler", userData: Nothing }
 
-  isAuthorizedHandler :: Req -> HandlerState -> Effect (RestResult Authorized HandlerState)
   isAuthorizedHandler req state = Rest.result Authorized req state
 
-  isConflict :: Req -> HandlerState -> Boolean
   isConflict req state = false
 
-  acceptJson :: forall state. Req -> state -> Effect (RestResult Boolean state)
   acceptJson req state = do
     body <- allBody req mempty
     result <- either (pure <<< Left <<< show) handlePayload $ readJSON $ unsafeCoerce body
     Rest.result true req state
 
-  handlePayload :: String -> Effect (Either String HandlerState)
+  handlePayload :: forall a. String -> Effect (Either a HandlerState)
   handlePayload payload = do
-    void $ logShow payload
-    pure $ Right { handlerName: payload }
-
-testStetsonConfig :: Effect (Either Foreign Unit)
-testStetsonConfig = do
-  Stetson.startClear "http_listener"
-    $ Stetson.configure
-        { routes =
-          Stetson.routes2 TestRoutes.apiRoute
-            { "TestBarebones": bareBonesHandler
-            , "TestFullyLoaded": fullyLoadedHandler
-            }
-        }
-
---- Retain the old builder
-testStetsonConfig2 :: Effect (Either Foreign Unit)
-testStetsonConfig2 = do
-  Stetson.configure
-    # Stetson.routes TestRoutes.apiRoute
-        ( { "TestBarebones": test2
-          , "TestFullyLoaded": test2
-          }
-        )
-    # Stetson.port 3000
-    # Stetson.bindTo 0 0 0 0
-    # Stetson.cowboyRoutes cowboyRoutes
-    # Stetson.startClear "http_listener2"
+    pure $ Right { handler: "fullyLoadedHandler", userData: Just payload }
 
 test2 :: SimpleStetsonHandler HandlerState
 test2 =
@@ -111,7 +128,7 @@ test2 =
     ( \req -> do
         -- And  our state can just be all the books in the library
         let
-          state = { handlerName: "test2" }
+          state = { handler: "simpleHandler", userData: Nothing }
         -- Return our unmodified req along with our state
         Rest.initResult req state
     )
@@ -131,15 +148,16 @@ test2 =
     body <- allBody req mempty
     -- read it as JSON, and chuck it into the create function of bookLibrary and obviously this is all
     -- either (Left/Right) all the way down
-    result <- either (pure <<< Left <<< show) create $ readJSON $ unsafeCoerce body
+    result <- either (pure <<< Left <<< show) handlePayload $ readJSON $ unsafeCoerce body
     case result of
       -- The point being that Left -> Failure -> False -> Err as the body
       Left err -> Rest.result false (setBody err req) state
       -- And Right -> Success -> True and no body
       Right c -> Rest.result true req state
 
-  create :: String -> Effect (Either String HandlerState)
-  create payload = pure $ Right { handlerName: payload }
+  handlePayload :: forall a. String -> Effect (Either a HandlerState)
+  handlePayload payload = do
+    pure $ Right { handler: "fullyLoadedHandler", userData: Just payload }
 
 allBody :: Req -> IOData -> Effect Binary
 allBody req acc = do
@@ -152,9 +170,9 @@ allBody req acc = do
 restHandler :: forall responseType state. responseType -> Req -> state -> Effect (RestResult responseType state)
 restHandler val req state = Rest.result val req state
 
--- Simple init hand
+-- Simple init handler
 cowboyRoutes :: List Path
 cowboyRoutes = Path (tuple3 (matchSpec "/foo") (NativeModuleName $ atom "foo") (InitialState $ unsafeToForeign {})) : nil
 
-jsonWriter :: WriteForeign HandlerState => Tuple2 String (Req -> HandlerState -> (Effect (RestResult String HandlerState)))
+jsonWriter :: forall a. WriteForeign a => Tuple2 String (Req -> a -> (Effect (RestResult String a)))
 jsonWriter = tuple2 "application/json" (\req state -> Rest.result (writeJSON state) req state)
