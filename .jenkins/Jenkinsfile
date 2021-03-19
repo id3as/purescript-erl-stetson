@@ -1,0 +1,36 @@
+pipeline {
+  agent any
+  stages {
+    stage('Nix Build') {
+      steps {
+        sh '''. ~/.nix-profile/etc/profile.d/nix.sh
+
+nix-shell --run exit | tee ./nix-build.log'''
+      }
+    }
+
+    stage('Build') {
+      steps {
+        sh '''. ~/.nix-profile/etc/profile.d/nix.sh
+
+
+nix-shell --command "make all"'''
+      }
+    }
+
+    stage('Run tests') {
+      steps {
+        sh '''. ~/.nix-profile/etc/profile.d/nix.sh
+
+nix-shell --command "make test"'''
+      }
+    }
+
+  }
+  post {
+    always {
+    }
+
+
+  }
+}
