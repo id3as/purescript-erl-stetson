@@ -15,11 +15,19 @@ let
       rev = "b3f10cd33107f220e4328f0222d3d026bf4f5f99";
     };
 
+  purerlSupport =
+    builtins.fetchGit {
+      name = "purerl-support-packages";
+      url = "https://github.com/id3as/nixpkgs-purerl-support.git";
+      rev = "7dda9cdff0550e6138cfa1f46b83f09fe0d92809";
+    };
+
   nixpkgs =
     import pinnedNix {
       overlays = [
         (import erlangReleases)
         (import purerlReleases)
+        (import purerlSupport)
       ];
     };
 
@@ -45,8 +53,8 @@ mkShell {
     erlangChannel.rebar3
     erlangChannel.erlang-ls
 
-    spago
-    purescript
+    purerl-support.purescript-0-13-8
+    purerl-support.spago-0-16-0
 
     # Purerl backend for purescript
     purerl.purerl-0-0-7
