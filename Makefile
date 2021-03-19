@@ -10,6 +10,8 @@ PS_TEST_ERL_FFI = $(shell find ${TEST_SRC} -type f -name \*.erl)
 
 all: src/compiled_ps erl docs
 
+ci: test
+
 src/compiled_ps: output/.complete
 	rm -f $$PWD/src/compiled_ps
 	ln -s $$PWD/output $$PWD/src/compiled_ps
