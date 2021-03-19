@@ -5,6 +5,9 @@ OUTPUT = output
 PS_SOURCEFILES = $(shell find ${PS_SRC} -type f -name \*.purs)
 PS_ERL_FFI = $(shell find ${PS_SRC} -type f -name \*.erl)
 
+ifeq (, $(shell which rebar3))
+ $(error "rebar3 is not available, tests cannot be run")
+endif
 
 all: src/compiled_ps
 
