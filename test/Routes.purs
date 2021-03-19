@@ -1,4 +1,4 @@
-module Test.Routes where
+module Stetson.Test.Routes where
 
 import Prelude
 import Data.Generic.Rep (class Generic)

@@ -1,4 +1,4 @@
-module Test.Main where
+module Stetson.Test.Main where
 
 import Prelude
 import Data.Maybe (Maybe(..))
@@ -6,8 +6,8 @@ import Effect (Effect)
 import Erl.Data.Tuple (snd)
 import Pinto.Types (StartLinkResult(..))
 import Test.Assert (assertEqual)
-import Test.Handlers (startLink, stopLink)
-import Test.Requests as Requests
+import Stetson.Test.Handlers (startLink, stopLink)
+import Stetson.Test.Requests as Requests
 
 foreign import startup :: Effect Unit
 

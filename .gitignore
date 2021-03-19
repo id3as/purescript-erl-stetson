@@ -12,3 +12,4 @@ test/src/compiled_ps
 src/compiled_ps
 log/
 logs/
+generated-docs/

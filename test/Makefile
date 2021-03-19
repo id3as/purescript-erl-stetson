@@ -17,7 +17,5 @@ testbuild:
 	rebar3 compile
 
 test: testbuild
-	erl -pa ebin -pa _build/default/lib/**/ebin -noshell -eval '(test_main@ps:main())()' -eval 'init:stop()'
-
-
+	erl -pa ebin -pa _build/default/lib/**/ebin -noshell -eval '(stetson_test_main@ps:main())()' -eval 'init:stop()'
 

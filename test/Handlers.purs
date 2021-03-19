@@ -1,4 +1,4 @@
-module Test.Handlers where
+module Stetson.Test.Handlers where
 
 import Prelude
 import Data.Either (Either(..), either)
@@ -21,7 +21,7 @@ import Stetson (Authorized(..), RestResult, SimpleStetsonHandler, StetsonHandler
 import Stetson as Stetson
 import Stetson.Rest as Rest
 import Stetson.Types (routeHandler)
-import Test.Routes as TestRoutes
+import Stetson.Test.Routes as TestRoutes
 import Unsafe.Coerce (unsafeCoerce)
 
 newtype State

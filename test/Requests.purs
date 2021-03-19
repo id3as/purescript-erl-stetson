@@ -1,4 +1,4 @@
-module Test.Requests where
+module Stetson.Test.Requests where
 
 import Data.Maybe (Maybe(..))
 import Effect (Effect)

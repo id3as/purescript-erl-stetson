@@ -87,11 +87,6 @@ routes2 routing d = { routing: routing, dispatch: dispatchTable d }
     { | r } -> a -> RouteHandler
   dispatchTable r a = gDispatch r (from a)
 
--- route value (WebSocket handler) config@{ routes } =
---   (config { routes = (Stetson { route: value
---                               , moduleName: (nativeModuleName ModuleNames.stetsonWebSocketHandler)
---                               , args: unsafeCoerce handler
---                               } : routes) })
 -- | Introduce a list of native Erlang cowboy handlers to this config
 cowboyRoutes :: forall a. List Path -> StetsonConfig a -> StetsonConfig a
 cowboyRoutes newRoutes config@{ cowboyRoutes: existingRoutes } = (config { cowboyRoutes = reverse newRoutes <> existingRoutes })

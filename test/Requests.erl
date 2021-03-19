@@ -1,4 +1,4 @@
--module(test_requests@foreign).
+-module(stetson_test_requests@foreign).
 -export([test_fully_loaded/1]).
 
 test_fully_loaded(Port) -> fun() ->
