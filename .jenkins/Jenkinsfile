@@ -27,10 +27,4 @@ nix-shell --command "make test"'''
     }
 
   }
-  post {
-    always {
-    }
-
-
-  }
 }
