@@ -139,7 +139,7 @@ content_types_accepted =
     Just factory -> do
       factoryResp <- factory req innerState
       case factoryResp of
-        RestSwitch handler rq st -> switchHandler handler rq (state { innerState = st })
+        RestSwitch handler' rq st -> switchHandler handler' rq (state { innerState = st })
         RestOk callbacks req2 innerState2 ->
           let
             fns = map (\tuple -> uncurry2 (\_ fn -> fn) tuple) callbacks
@@ -157,7 +157,7 @@ content_types_provided =
     Just factory -> do
       factoryResp <- factory req innerState
       case factoryResp of
-        RestSwitch handler rq st -> switchHandler handler rq (state { innerState = st })
+        RestSwitch handler' rq st -> switchHandler handler' rq (state { innerState = st })
         RestOk callbacks req2 innerState2 ->
           let
             fns = map (\tuple -> uncurry2 (\_ fn -> fn) tuple) callbacks
@@ -276,7 +276,7 @@ websocket_handle =
 websocket_info :: forall msg state. CowboyWS.InfoHandler msg (State msg state)
 websocket_info =
   mkEffectFn2 \msg state -> case state of
-    { innerState, handler: { wsInfo: Just info } } -> transformWsResult state =<< evalStateT (info msg innerState) =<< wsState
+    { innerState, handler: { wsInfo: Just wsInfo } } -> transformWsResult state =<< evalStateT (wsInfo msg innerState) =<< wsState
     _ -> pure $ CowboyWS.okResult state
 
 transformWsResult :: forall msg state. State msg state -> WebSocketCallResult state -> Effect (CowboyWS.CallResult (State msg state))
@@ -296,7 +296,7 @@ loopState = Process <$> self
 info :: forall msg state. CowboyLoop.InfoHandler msg (State msg state)
 info =
   mkEffectFn3 \msg req state -> case state of
-    { innerState, handler: { loopInfo: Just info } } -> transformLoopResult state =<< evalStateT (info msg req innerState) =<< loopState
+    { innerState, handler: { loopInfo: Just loopInfo } } -> transformLoopResult state =<< evalStateT (loopInfo msg req innerState) =<< loopState
     _ -> pure $ CowboyLoop.continue state req
 
 transformLoopResult :: forall msg state. State msg state -> LoopCallResult state -> Effect (CowboyLoop.InfoResult (State msg state))

@@ -110,7 +110,7 @@ result re rq st = pure $ RestOk re rq st
 
 -- | Switches to a different handler (probably cowboy_loop)
 switchHandler :: forall reply state. CowboyHandler -> Req -> state -> Effect (RestResult reply state)
-switchHandler handler rq st = pure $ RestSwitch handler rq st
+switchHandler handler' rq st = pure $ RestSwitch handler' rq st
 
 -- | Create a rest stop response for return from a rest callback
 stop :: forall reply state. Req -> state -> Effect (RestResult reply state)

@@ -86,7 +86,7 @@ execute req env =
         pure $ okResult req env'
     CowboyRouterFallback -> cowboyRouterExecute req env
 
-  updateEnv { mod, args } env =
+  updateEnv { mod, args } env' =
     Map.insert (atom "handler") (unsafeToForeign mod)
       $ Map.insert (atom "handler_opts") args
-      $ env
+      $ env'
