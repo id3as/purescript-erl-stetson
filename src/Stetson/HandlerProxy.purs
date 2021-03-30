@@ -15,14 +15,14 @@ import Erl.Cowboy.Req (Req)
 import Erl.Data.List (List, nil, (!!))
 import Erl.Data.Tuple (tuple2, uncurry2)
 import Erl.ModuleName (NativeModuleName(..))
-import Erl.Process (Process(..))
+import Erl.Process (Process)
 import Erl.Process.Raw (Pid, send)
 import Foreign (Foreign)
 import Stetson (WebSocketCallResult(..))
 import Stetson.Types (Authorized(..), CowboyHandler(..), InitResult(..), LoopCallResult(..), LoopInternalState, RestResult(..), StetsonHandlerCallbacks, WebSocketInternalState)
 import Unsafe.Coerce (unsafeCoerce)
 
-foreign import self :: Effect Pid
+foreign import self :: forall msg. Effect (Process msg)
 
 foreign import data ElidedInitResult :: Type
 
@@ -253,7 +253,7 @@ provide_6 = provide 6
 -- Websocket handler
 --
 wsState :: forall msg. Effect (WebSocketInternalState msg)
-wsState = Process <$> self
+wsState = self
 
 websocket_init :: forall msg state. CowboyWS.WSInitHandler (State msg state)
 websocket_init =
@@ -291,7 +291,7 @@ transformWsResult state result = case result of
 --- Loop handler
 ---
 loopState :: forall msg. Effect (LoopInternalState msg)
-loopState = Process <$> self
+loopState = self
 
 info :: forall msg state. CowboyLoop.InfoHandler msg (State msg state)
 info =
