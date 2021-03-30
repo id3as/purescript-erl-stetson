@@ -3,20 +3,205 @@
 This is the entry point into the Stetson wrapper
 You'll want to call Stetson.configure and then follow the types..
 
+#### `configure`
+
+``` purescript
+configure :: StetsonConfig NoArguments
+```
+
+Creates a blank stetson config with default settings and no routes
+
+#### `cowboyRoutes`
+
+``` purescript
+cowboyRoutes :: forall a. List Path -> StetsonConfig a -> StetsonConfig a
+```
+
+Introduce a list of native Erlang cowboy handlers to this config
+
+#### `routes`
+
+``` purescript
+routes :: forall a b rep r. Generic a rep => GDispatch rep r => RouteDuplex' a -> Record r -> StetsonConfig b -> StetsonConfig a
+```
+
+#### `routes2`
+
+``` purescript
+routes2 :: forall a rep r. Generic a rep => GDispatch rep r => RouteDuplex' a -> Record r -> RouteConfig a
+```
+
+#### `port`
+
+``` purescript
+port :: forall a. Int -> StetsonConfig a -> StetsonConfig a
+```
+
+Set the port that this http listener will listen to
+
+#### `bindTo`
+
+``` purescript
+bindTo :: forall a. Int -> Int -> Int -> Int -> StetsonConfig a -> StetsonConfig a
+```
+
+Set the IP that this http listener will bind to (default: 0.0.0.0)
+
+#### `streamHandlers`
+
+``` purescript
+streamHandlers :: forall a. List NativeModuleName -> StetsonConfig a -> StetsonConfig a
+```
+
+Supply a list of modules to act as native stream handlers in cowboy
+
+#### `middlewares`
+
+``` purescript
+middlewares :: forall a. List NativeModuleName -> StetsonConfig a -> StetsonConfig a
+```
+
+Supply a list of modules to act as native middlewares in cowboy
+
+#### `startClear`
+
+``` purescript
+startClear :: forall a. String -> StetsonConfig a -> Effect (Either Foreign Unit)
+```
+
+Start the listener with the specified name
+
+#### `stop`
+
+``` purescript
+stop :: String -> Effect Unit
+```
+
+
+### Re-exported from Stetson.Types:
+
+#### `WebSocketInitHandler`
+
+``` purescript
+type WebSocketInitHandler msg state = state -> WebSocketResult msg (WebSocketCallResult state)
+```
+
+Callback used to kick off the WebSocket handler
+This is a good time to get hold of 'self' and set up subscriptions
+
+#### `WebSocketInfoHandler`
+
+``` purescript
+type WebSocketInfoHandler msg state = msg -> state -> WebSocketResult msg (WebSocketCallResult state)
+```
+
+Callback used to handle messages sent from Erlang (hopefully via the router) so they'll be of the right type
+
+#### `WebSocketHandleHandler`
+
+``` purescript
+type WebSocketHandleHandler msg state = Frame -> state -> WebSocketResult msg (WebSocketCallResult state)
+```
+
+Callback used to handle messages sent from the client in the form of 'Frames' which will need
+unpacking/decoding/parsing etc
+
+#### `WebSocketCallResult`
+
+``` purescript
+data WebSocketCallResult state
+  = NoReply state
+  | Hibernate state
+  | Reply (List Frame) state
+  | ReplyAndHibernate (List Frame) state
+  | Stop state
+```
+
+Return type of most WebSocket callbacks
+
+#### `StetsonHandler`
+
+``` purescript
+data StetsonHandler msg state
+  = StetsonHandler (StetsonHandlerCallbacks msg state)
+```
+
+A builder containing the complete set of callbacks for any sort of request
+
+#### `StetsonConfig`
+
+``` purescript
+type StetsonConfig a = { bindAddress :: Tuple4 Int Int Int Int, bindPort :: Int, cowboyRoutes :: List Path, middlewares :: Maybe (List NativeModuleName), routes :: RouteConfig a, streamHandlers :: Maybe (List NativeModuleName) }
+```
+
+#### `StaticAssetLocation`
+
+``` purescript
+data StaticAssetLocation
+  = PrivDir String String
+  | PrivFile String String
+```
+
+#### `SimpleStetsonHandler`
+
+``` purescript
+type SimpleStetsonHandler state = StetsonHandler Unit state
+```
+
+A type alias for StetsonHandler, but with no ability to receive messages
+
+#### `RouteHandler`
+
+``` purescript
+data RouteHandler
+  = StetsonRoute (Exists StetsonRouteInner)
+  | StaticRoute (Array String) StaticAssetLocation
+  | CowboyRouteFallthrough
+```
+
+#### `RouteConfig`
+
+``` purescript
+type RouteConfig a = { dispatch :: a -> RouteHandler, routing :: RouteDuplex' a }
+```
+
 #### `RestResult`
 
 ``` purescript
 data RestResult reply state
   = RestOk reply Req state
+  | RestStop Req state
+  | RestSwitch CowboyHandler Req state
 ```
 
 The return type of most of the callbacks invoked as part of the REST workflow
+
+#### `ProvideHandler`
+
+``` purescript
+type ProvideHandler state = Req -> state -> Effect (RestResult String state)
+```
+
+A callback invoked to 'provide' a specific content type
+
+#### `LoopCallResult`
+
+``` purescript
+data LoopCallResult state
+  = LoopOk Req state
+  | LoopHibernate Req state
+  | LoopStop Req state
+```
+
+Return type of most Loop callbacks
 
 #### `InitResult`
 
 ``` purescript
 data InitResult state
-  = InitOk Req state
+  = Rest Req state
+  | WebSocket Req state
+  | Loop Req state
 ```
 
 The return type of the 'init' callback in the REST workflow
@@ -28,30 +213,6 @@ type InitHandler state = Req -> Effect (InitResult state)
 ```
 
 The callback invoked to kick off the REST workflow
-
-#### `AcceptHandler`
-
-``` purescript
-type AcceptHandler state = Req -> state -> Effect (RestResult Boolean state)
-```
-
-A callback invoked to 'accept' a specific content type
-
-#### `ProvideHandler`
-
-``` purescript
-type ProvideHandler state = Req -> state -> Effect (RestResult String state)
-```
-
-A callback invoked to 'provide' a specific content type
-
-#### `RestHandler`
-
-``` purescript
-type RestHandler state = { init :: Req -> Effect (InitResult state), allowedMethods :: Maybe (Req -> state -> Effect (RestResult (List HttpMethod) state)), resourceExists :: Maybe (Req -> state -> Effect (RestResult Boolean state)), contentTypesAccepted :: Maybe (Req -> state -> Effect (RestResult (List (Tuple2 String (AcceptHandler state))) state)), contentTypesProvided :: Maybe (Req -> state -> Effect (RestResult (List (Tuple2 String (ProvideHandler state))) state)), deleteResource :: Maybe (Req -> state -> Effect (RestResult Boolean state)), isAuthorized :: Maybe (Req -> state -> Effect (RestResult Authorized state)), movedTemporarily :: Maybe (Req -> state -> Effect (RestResult MovedResult state)), movedPermanently :: Maybe (Req -> state -> Effect (RestResult MovedResult state)), serviceAvailable :: Maybe (Req -> state -> Effect (RestResult Boolean state)), previouslyExisted :: Maybe (Req -> state -> Effect (RestResult Boolean state)), forbidden :: Maybe (Req -> state -> Effect (RestResult Boolean state)) }
-```
-
-A builder containing the complete set of callbacks during the rest workflow for a specific handler
 
 #### `HttpMethod`
 
@@ -72,6 +233,24 @@ or is it a verb
 Show HttpMethod
 ```
 
+#### `HandlerArgs`
+
+``` purescript
+data HandlerArgs :: Type
+```
+
+#### `CowboyHandler`
+
+``` purescript
+data CowboyHandler
+  = RestHandler
+  | LoopHandler
+  | WebSocketHandler
+```
+
+The different handlers exposed by Cowboy and loosely mapping onto the
+Rest/Loop/WebSocket namespaces
+
 #### `Authorized`
 
 ``` purescript
@@ -82,124 +261,29 @@ data Authorized
 
 Return type of the isAuthorized callback
 
-#### `StetsonHandler`
+#### `AcceptHandler`
 
 ``` purescript
-data StetsonHandler state
-  = Rest (RestHandler state)
+type AcceptHandler state = Req -> state -> Effect (RestResult Boolean state)
 ```
 
-#### `StaticAssetLocation`
+A callback invoked to 'accept' a specific content type
+
+#### `runStetsonRoute`
 
 ``` purescript
-data StaticAssetLocation
-  = PrivDir String String
-  | PrivFile String String
+runStetsonRoute :: forall z. (forall b c. StetsonHandler b c -> z) -> Exists StetsonRouteInner -> z
 ```
 
-#### `StetsonRoute`
+#### `mkStetsonRoute`
 
 ``` purescript
-type StetsonRoute = { route :: String, moduleName :: NativeModuleName, args :: HandlerArgs }
+mkStetsonRoute :: forall a s. StetsonHandler a s -> Exists StetsonRouteInner
 ```
 
-#### `HandlerArgs`
+#### `emptyHandler`
 
 ``` purescript
-data HandlerArgs :: Type
+emptyHandler :: forall msg state. InitHandler state -> StetsonHandler msg state
 ```
-
-#### `ConfiguredRoute`
-
-``` purescript
-data ConfiguredRoute
-  = Stetson StetsonRoute
-  | Cowboy Path
-```
-
-#### `StetsonConfig`
-
-``` purescript
-type StetsonConfig = { bindPort :: Int, bindAddress :: Tuple4 Int Int Int Int, streamHandlers :: Maybe (List NativeModuleName), middlewares :: Maybe (List NativeModuleName), routes :: List ConfiguredRoute }
-```
-
-#### `configure`
-
-``` purescript
-configure :: StetsonConfig
-```
-
-Creates a blank stetson config with default settings and no routes
-
-#### `route`
-
-``` purescript
-route :: forall state. String -> StetsonHandler state -> StetsonConfig -> StetsonConfig
-```
-
-Add a route to a StetsonConfig
-value: The path this route will handle (this takes the same format as cowboy routes)
-handler: The handler that will take care of this request
-config: The config to add this route to
-```purescript
-let newConfig = Stetson.route "/items/:id" myHandler config
-```
-
-#### `static`
-
-``` purescript
-static :: String -> StaticAssetLocation -> StetsonConfig -> StetsonConfig
-```
-
-Add a static route handler to a StetsonConfig
-This can either be a file or a directory to serve a file or files from
-
-#### `cowboyRoutes`
-
-``` purescript
-cowboyRoutes :: List Path -> StetsonConfig -> StetsonConfig
-```
-
-Introduce a list of native Erlang cowboy handlers to this config
-
-#### `port`
-
-``` purescript
-port :: Int -> StetsonConfig -> StetsonConfig
-```
-
-Set the port that this http listener will listen to
-
-#### `bindTo`
-
-``` purescript
-bindTo :: Int -> Int -> Int -> Int -> StetsonConfig -> StetsonConfig
-```
-
-Set the IP that this http listener will bind to (default: 0.0.0.0)
-
-#### `streamHandlers`
-
-``` purescript
-streamHandlers :: List NativeModuleName -> StetsonConfig -> StetsonConfig
-```
-
-Supply a list of modules to act as native stream handlers in cowboy
-
-#### `middlewares`
-
-``` purescript
-middlewares :: List NativeModuleName -> StetsonConfig -> StetsonConfig
-```
-
-Supply a list of modules to act as native middlewares in cowboy
-
-#### `startClear`
-
-``` purescript
-startClear :: String -> StetsonConfig -> Effect Unit
-```
-
-Start the listener with the specified name
-
 

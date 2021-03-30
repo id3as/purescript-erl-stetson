@@ -1,0 +1,11 @@
+{application, stetson_test,
+ [{description, ""},
+  {vsn, "stetson_test"},
+  {registered, []},
+  {modules, []},
+  {applications, [kernel,
+                  stdlib,
+                  elli]},
+  {mod, {stetson_test_app, []}},
+  {env, []}
+ ]}.

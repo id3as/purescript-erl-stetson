@@ -1,33 +1,32 @@
 -- | This module contains the functions necessary to define a rest handler for a route in Stetson/Cowboy
 -- | This maps pretty much 1-1 onto https://ninenines.eu/docs/en/cowboy/2.5/guide/rest_handlers/#_callbacks
 -- | Although only the handlers that we have needed so far are defined - feel free to send pull requests that add the ones you need
-module Stetson.Rest ( handler
-                    , allowMissingPost
-                    , allowedMethods
-                    , malformedRequest
-                    , resourceExists
-                    , isAuthorized
-                    , isConflict
-                    , contentTypesAccepted
-                    , contentTypesProvided
-                    , deleteResource
-                    , movedTemporarily
-                    , movedPermanently
-                    , serviceAvailable
-                    , previouslyExisted
-                    , switchHandler
-                    , forbidden
-                    , terminate
-                    , initResult
-                    , result
-                    , stop
-                    , preHook
-                    , preHook'
-                    )
-  where
+module Stetson.Rest
+  ( handler
+  , allowMissingPost
+  , allowedMethods
+  , malformedRequest
+  , resourceExists
+  , isAuthorized
+  , isConflict
+  , contentTypesAccepted
+  , contentTypesProvided
+  , deleteResource
+  , movedTemporarily
+  , movedPermanently
+  , serviceAvailable
+  , previouslyExisted
+  , switchHandler
+  , forbidden
+  , terminate
+  , initResult
+  , result
+  , stop
+  , preHook
+  , preHook'
+  ) where
 
 import Prelude
-
 import Data.Maybe (Maybe(..))
 import Foreign (Foreign)
 import Effect (Effect)
@@ -63,11 +62,11 @@ isConflict fn (StetsonHandler h) = (StetsonHandler $ h { isConflict = Just fn })
 
 -- | Add a contentTypesAccepted callback to the provided StetsonHandler
 contentTypesAccepted :: forall msg state. (Req -> state -> Effect (RestResult (List (Tuple2 String (AcceptHandler state))) state)) -> StetsonHandler msg state -> StetsonHandler msg state
-contentTypesAccepted fn (StetsonHandler h) = (StetsonHandler $ h { contentTypesAccepted = Just fn  })
+contentTypesAccepted fn (StetsonHandler h) = (StetsonHandler $ h { contentTypesAccepted = Just fn })
 
 -- | Add a contentTypesProvided callback to the provided StetsonHandler
 contentTypesProvided :: forall msg state. (Req -> state -> Effect (RestResult (List (Tuple2 String (ProvideHandler state))) state)) -> StetsonHandler msg state -> StetsonHandler msg state
-contentTypesProvided fn (StetsonHandler h) = (StetsonHandler $ h { contentTypesProvided = Just fn  })
+contentTypesProvided fn (StetsonHandler h) = (StetsonHandler $ h { contentTypesProvided = Just fn })
 
 -- | Add a deleteResource callback to the provided StetsonHandler
 deleteResource :: forall msg state. (Req -> state -> Effect (RestResult Boolean state)) -> StetsonHandler msg state -> StetsonHandler msg state
@@ -111,7 +110,7 @@ result re rq st = pure $ RestOk re rq st
 
 -- | Switches to a different handler (probably cowboy_loop)
 switchHandler :: forall reply state. CowboyHandler -> Req -> state -> Effect (RestResult reply state)
-switchHandler handler rq st = pure $ RestSwitch handler rq st
+switchHandler handler' rq st = pure $ RestSwitch handler' rq st
 
 -- | Create a rest stop response for return from a rest callback
 stop :: forall reply state. Req -> state -> Effect (RestResult reply state)
@@ -120,43 +119,42 @@ stop rq st = pure $ RestStop rq st
 --------------------------------------------------------------------------------
 -- Debug helpers
 --------------------------------------------------------------------------------
-preHook :: forall msg state.
-           (forall state2. String -> Req -> state2 -> Effect Unit)
-             -> StetsonHandler msg state -> StetsonHandler msg state
-
+preHook ::
+  forall msg state.
+  (forall state2. String -> Req -> state2 -> Effect Unit) ->
+  StetsonHandler msg state -> StetsonHandler msg state
 preHook hook =
-  preHook'
-    \name orgHandler ->
-      \req state -> do
-        _ <- hook name req state
-        orgHandler req state
+  preHook' \name orgHandler -> \req state -> do
+    _ <- hook name req state
+    orgHandler req state
 
 -- | Add a hook in front of every call to a handler
-preHook' :: forall msg state.
-           (forall a state2. (String -> (Req -> state2 -> Effect a) -> (Req -> state2 -> Effect a)))
-             -> StetsonHandler msg state -> StetsonHandler msg state
+preHook' ::
+  forall msg state.
+  (forall a state2. (String -> (Req -> state2 -> Effect a) -> (Req -> state2 -> Effect a))) ->
+  StetsonHandler msg state -> StetsonHandler msg state
 preHook' hook (StetsonHandler state) =
-  StetsonHandler { init: state.init
-                 , terminate            : state.terminate
-                 , allowedMethods       : hook "allowedMethods"       <$> state.allowedMethods
-                 , malformedRequest     : hook "malformedRequest"     <$> state.malformedRequest
-                 , resourceExists       : hook "resourceExists"       <$> state.resourceExists
-                 , contentTypesAccepted : hook "contentTypesAccepted" <$> state.contentTypesAccepted
-                 , contentTypesProvided : hook "contentTypesProvided" <$> state.contentTypesProvided
-                 , deleteResource       : hook "deleteResource"       <$> state.deleteResource
-                 , isAuthorized         : hook "isAuthorized"         <$> state.isAuthorized
-                 , isConflict           : hook "isConflict"           <$> state.isConflict
-                 , movedTemporarily     : hook "movedTemporarily"     <$> state.movedTemporarily
-                 , movedPermanently     : hook "movedPermanently"     <$> state.movedPermanently
-                 , serviceAvailable     : hook "serviceAvailable"     <$> state.serviceAvailable
-                 , previouslyExisted    : hook "previouslyExisted"    <$> state.previouslyExisted
-                 , allowMissingPost     : hook "allowMissingPost"     <$> state.allowMissingPost
-                 , forbidden            : hook "forbidden"            <$> state.forbidden
-
-                 -- TODO: These
-                 , wsInit               : state.wsInit
-                 , wsHandle             : state.wsHandle
-                 , wsInfo               : state.wsInfo
-                 , loopInfo             : state.loopInfo
-                 , loopInit             : state.loopInit
-                 }
+  StetsonHandler
+    { init: state.init
+    , terminate: state.terminate
+    , allowedMethods: hook "allowedMethods" <$> state.allowedMethods
+    , malformedRequest: hook "malformedRequest" <$> state.malformedRequest
+    , resourceExists: hook "resourceExists" <$> state.resourceExists
+    , contentTypesAccepted: hook "contentTypesAccepted" <$> state.contentTypesAccepted
+    , contentTypesProvided: hook "contentTypesProvided" <$> state.contentTypesProvided
+    , deleteResource: hook "deleteResource" <$> state.deleteResource
+    , isAuthorized: hook "isAuthorized" <$> state.isAuthorized
+    , isConflict: hook "isConflict" <$> state.isConflict
+    , movedTemporarily: hook "movedTemporarily" <$> state.movedTemporarily
+    , movedPermanently: hook "movedPermanently" <$> state.movedPermanently
+    , serviceAvailable: hook "serviceAvailable" <$> state.serviceAvailable
+    , previouslyExisted: hook "previouslyExisted" <$> state.previouslyExisted
+    , allowMissingPost: hook "allowMissingPost" <$> state.allowMissingPost
+    , forbidden: hook "forbidden" <$> state.forbidden
+    -- TODO: These
+    , wsInit: state.wsInit
+    , wsHandle: state.wsHandle
+    , wsInfo: state.wsInfo
+    , loopInfo: state.loopInfo
+    , loopInit: state.loopInit
+    }

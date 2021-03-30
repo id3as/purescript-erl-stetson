@@ -1,15 +1,15 @@
-module Stetson.WebSocket ( handler
-                         , init
-                         , handle
-                         , info
-                         , self
-                         , initResult
-                         , terminate
-                         , module Exports
+module Stetson.WebSocket
+  ( handler
+  , init
+  , handle
+  , info
+  , self
+  , initResult
+  , terminate
+  , module Exports
   ) where
 
 import Prelude
-
 import Foreign (Foreign)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
@@ -22,19 +22,17 @@ import Stetson.Types (InitHandler, InitResult(..), WebSocketHandleHandler, Stets
 handler :: forall msg state. InitHandler state -> StetsonHandler msg state
 handler i = emptyHandler i
 
-init  :: forall msg state. WebSocketInitHandler msg state -> StetsonHandler msg state -> StetsonHandler msg state
+init :: forall msg state. WebSocketInitHandler msg state -> StetsonHandler msg state -> StetsonHandler msg state
 init fn (StetsonHandler h) = StetsonHandler $ h { wsInit = Just fn }
 
 self :: forall msg. State.StateT (Process msg) Effect (Process msg)
 self = State.get
 
-handle :: forall msg state.  WebSocketHandleHandler msg state -> StetsonHandler msg state -> StetsonHandler msg state
-handle fn (StetsonHandler h) =
-  StetsonHandler $ h { wsHandle = Just fn  }
+handle :: forall msg state. WebSocketHandleHandler msg state -> StetsonHandler msg state -> StetsonHandler msg state
+handle fn (StetsonHandler h) = StetsonHandler $ h { wsHandle = Just fn }
 
-info :: forall msg state.  WebSocketInfoHandler msg state -> StetsonHandler msg state -> StetsonHandler msg state
-info fn (StetsonHandler h) =
-  StetsonHandler $ h { wsInfo = Just fn  }
+info :: forall msg state. WebSocketInfoHandler msg state -> StetsonHandler msg state -> StetsonHandler msg state
+info fn (StetsonHandler h) = StetsonHandler $ h { wsInfo = Just fn }
 
 -- | Add a terminate callback to the provided StetsonHandler
 terminate :: forall msg state. (Foreign -> Req -> state -> Effect Unit) -> StetsonHandler msg state -> StetsonHandler msg state

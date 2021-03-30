@@ -1,7 +1,6 @@
 module RoutingDuplexMiddleware (ModuleInfo, routes, execute, ExecuteResult, UnmatchedHandler(..), Config) where
 
 import Prelude
-
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
@@ -23,19 +22,24 @@ import Unsafe.Coerce (unsafeCoerce)
 routesKey :: Atom
 routesKey = atom "routes"
 
-data UnmatchedHandler = CowboyRouterFallback | Default | DefaultHandler ModuleInfo
+data UnmatchedHandler
+  = CowboyRouterFallback
+  | Default
+  | DefaultHandler ModuleInfo
 
-type Config a =
-  { dispatch :: Req -> a -> Tuple2 Req (Either UnmatchedHandler ModuleInfo)
-  , unmatched :: RouteError -> UnmatchedHandler
-  }
+type Config a
+  = { dispatch :: Req -> a -> Tuple2 Req (Either UnmatchedHandler ModuleInfo)
+    , unmatched :: RouteError -> UnmatchedHandler
+    }
 
-type ModuleInfo = { mod :: NativeModuleName, args :: Foreign }
+type ModuleInfo
+  = { mod :: NativeModuleName, args :: Foreign }
 
 routes :: forall a. RouteDuplex' a -> Config a -> Env -> Env
-routes r config env = Map.insert routesKey (Foreign.unsafeToForeign (Routes r config))  env
+routes r config env = Map.insert routesKey (Foreign.unsafeToForeign (Routes r config)) env
 
-data Routes a = Routes (RouteDuplex' a) (Config a)
+data Routes a
+  = Routes (RouteDuplex' a) (Config a)
 
 foreign import cowboyRouterExecute :: Req -> Env -> Effect ExecuteResult
 
@@ -48,38 +52,41 @@ stopResult :: Req -> ExecuteResult
 stopResult req = unsafeCoerce $ tuple2 (atom "stop") req
 
 execute :: Req -> Env -> ExecuteResult
-execute req env = unsafePerformEffect $ do
-  case Map.lookup routesKey env of
-    Nothing ->
-      throw "No routes"
-    Just routesConfig -> do
-      let
-        Routes routes { dispatch, unmatched } = unsafeFromForeign routesConfig
-        pathAndQuery = case Req.qs req of
-          "" -> Req.path req
-          qs -> Req.path req <> "?" <> qs
-      case parse routes pathAndQuery of
-        Right parsedRoute -> do
-          flip uncurry2 (dispatch req parsedRoute) \req' dispatched ->
-            case dispatched of
-              Left unmatched -> handleUnmatched unmatched
-              Right matched ->
-                let env' = updateEnv matched env
-                in pure $ okResult req' env'
-        Left err -> handleUnmatched $ unmatched err
-  where
-    handleUnmatched =
-      case _ of
-        Default -> do
-          req' <- Req.replyStatus (StatusCode 404) req
-          pure $ stopResult req'
-        DefaultHandler handler ->
-          let env' = updateEnv handler env
-          in pure $ okResult req env'
-        CowboyRouterFallback ->
-          cowboyRouterExecute req env
+execute req env =
+  unsafePerformEffect
+    $ do
+        case Map.lookup routesKey env of
+          Nothing -> throw "No routes"
+          Just routesConfig -> do
+            let
+              Routes routes { dispatch, unmatched } = unsafeFromForeign routesConfig
 
-    updateEnv { mod, args } env =
-      Map.insert (atom "handler") (unsafeToForeign mod)
+              pathAndQuery = case Req.qs req of
+                "" -> Req.path req
+                qs -> Req.path req <> "?" <> qs
+            case parse routes pathAndQuery of
+              Right parsedRoute -> do
+                flip uncurry2 (dispatch req parsedRoute) \req' dispatched -> case dispatched of
+                  Left unmatched -> handleUnmatched unmatched
+                  Right matched ->
+                    let
+                      env' = updateEnv matched env
+                    in
+                      pure $ okResult req' env'
+              Left err -> handleUnmatched $ unmatched err
+  where
+  handleUnmatched = case _ of
+    Default -> do
+      req' <- Req.replyStatus (StatusCode 404) req
+      pure $ stopResult req'
+    DefaultHandler handler ->
+      let
+        env' = updateEnv handler env
+      in
+        pure $ okResult req env'
+    CowboyRouterFallback -> cowboyRouterExecute req env
+
+  updateEnv { mod, args } env' =
+    Map.insert (atom "handler") (unsafeToForeign mod)
       $ Map.insert (atom "handler_opts") args
-      $ env
+      $ env'

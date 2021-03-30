@@ -1,3 +1,15 @@
 output/
 .psc-package/
 .psc-ide-port
+.spago/
+node_modules/
+ebin/
+package-lock.json
+erl_crash.dump
+settings.json
+test/_build
+test/src/compiled_ps
+src/compiled_ps
+log/
+logs/
+generated-docs/

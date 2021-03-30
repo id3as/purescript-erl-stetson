@@ -3,8 +3,20 @@ Welcome to a Spago project!
 You can edit this file as you like.
 -}
 { name = "erl-stetson"
-, dependencies = [ "erl-cowboy", "routing-duplex", "console"]
+, dependencies =
+    [ "erl-binary"
+    , "erl-cowboy"
+    , "erl-lists"
+    , "erl-maps"
+    , "erl-pinto"
+    , "erl-tuples"
+    , "routing-duplex"
+    , "assert"
+    , "console"
+    , "debug"
+    , "simple-json"
+    ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]
-,backend = "purerl"
+, backend = "purerl"
 }
