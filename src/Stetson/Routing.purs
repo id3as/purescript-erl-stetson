@@ -8,7 +8,7 @@ import Record as Record
 import Stetson.Rest as Rest
 import Stetson.Types (CowboyRoutePlaceholder, InitResult(..), RouteHandler(..), StaticAssetLocation, StetsonHandler, mkStetsonRoute)
 
-class GDispatch rep (r :: # Type) | rep -> r where
+class GDispatch rep (r :: Row Type) | rep -> r where
   gDispatch :: { | r } -> rep -> RouteHandler
 
 instance gDispatchSum ::

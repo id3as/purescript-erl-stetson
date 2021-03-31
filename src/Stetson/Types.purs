@@ -273,12 +273,14 @@ emptyHandler init =
     , loopInfo: Nothing
     }
 
+type Unlift :: forall k. k -> k
 type Unlift a
   = a
 
 type RouteHandler2 msg state
   = Config state (OptionalConfig Maybe msg state)
 
+type RequestHandler :: (Type -> Type) -> Type -> Type -> Type
 type RequestHandler f resultType state
   = f (Req -> state -> Effect (RestResult resultType state))
 
