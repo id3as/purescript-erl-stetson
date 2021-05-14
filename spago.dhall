@@ -4,19 +4,27 @@ You can edit this file as you like.
 -}
 { name = "erl-stetson"
 , dependencies =
-    [ "erl-binary"
-    , "erl-cowboy"
-    , "erl-lists"
-    , "erl-maps"
-    , "erl-pinto"
-    , "erl-tuples"
-    , "routing-duplex"
-    , "assert"
-    , "console"
-    , "debug"
-    , "simple-json"
-    ]
+  [ "effect"
+  , "either"
+  , "erl-atom"
+  , "erl-cowboy"
+  , "erl-lists"
+  , "erl-maps"
+  , "erl-modules"
+  , "erl-process"
+  , "erl-tuples"
+  , "exceptions"
+  , "exists"
+  , "foldable-traversable"
+  , "foreign"
+  , "maybe"
+  , "prelude"
+  , "record"
+  , "routing-duplex"
+  , "transformers"
+  , "unsafe-coerce"
+  ]
 , packages = ./packages.dhall
-, sources = [ "src/**/*.purs", "test/**/*.purs" ]
+, sources = [ "src/**/*.purs" ]
 , backend = "purerl"
 }

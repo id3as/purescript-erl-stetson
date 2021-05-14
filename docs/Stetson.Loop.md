@@ -36,6 +36,6 @@ info :: forall msg state. LoopInfoHandler msg state -> StetsonHandler msg state 
 #### `lift`
 
 ``` purescript
-lift :: forall m a t. MonadTrans t => Monad m => m a -> t m a
+lift :: forall t m a. MonadTrans t => Monad m => m a -> t m a
 ```
 

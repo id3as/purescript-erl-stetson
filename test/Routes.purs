@@ -2,7 +2,7 @@ module Stetson.Test.Routes where
 
 import Prelude hiding ((/))
 import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Show (genericShow)
+import Data.Show.Generic (genericShow)
 import Data.Newtype (class Newtype, unwrap, wrap)
 import Routing.Duplex (RouteDuplex', as, path)
 import Routing.Duplex as RouteDuplex

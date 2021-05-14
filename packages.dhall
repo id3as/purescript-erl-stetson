@@ -116,17 +116,35 @@ let additions =
   }
 -------------------------------
 -}
-
-
 let upstream =
-      https://github.com/purerl/package-sets/releases/download/erl-0.13.8-20201204/packages.dhall sha256:b30e5b014ac53a2cfd4308b6c72a4832accd713a23821e5dfb6ebb0f897f77ad
+      https://github.com/purerl/package-sets/releases/download/erl-0.14.1-20210426/packages.dhall sha256:19829ae168a3223e007cecfaaffcd5cf78e00e20974393ee1721a543872de75b
 
 let overrides =
       { erl-lists =
               upstream.erl-lists
           //  { version = "1d059f0df04f1c83f35a6eae706bd86cda8b015e" }
+    , erl-process =
+             upstream.erl-process
+         //  { repo = "https://github.com/id3as/purescript-erl-process.git"
+             , version = "17faeefd023520a18e37e4e527fa9ef54fdf8cd1"
+             }
       }
+      
 
-let additions = {=}
+let additions = {
+ erl-pinto =
+        { repo = "https://github.com/id3as/purescript-erl-pinto.git"
+        , dependencies =
+          [ "erl-process"
+          , "erl-lists"
+          , "erl-atom"
+          , "erl-tuples"
+          , "erl-modules"
+          , "foreign"
+          ]
+        , version = "f4200a0ed787c74649e4f2503a77df3c6cb5c21d"
+        }
+
+}
 
 in  upstream // overrides // additions

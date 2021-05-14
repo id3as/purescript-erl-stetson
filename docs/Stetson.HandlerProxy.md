@@ -3,7 +3,7 @@
 #### `self`
 
 ``` purescript
-self :: Effect Pid
+self :: forall msg. Effect (Process msg)
 ```
 
 #### `ElidedInitResult`

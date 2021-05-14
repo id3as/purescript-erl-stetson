@@ -3,7 +3,7 @@
 #### `GDispatch`
 
 ``` purescript
-class GDispatch rep (r :: # Type) | rep -> r where
+class GDispatch rep (r :: Row Type) | rep -> r where
   gDispatch :: Record r -> rep -> RouteHandler
 ```
 

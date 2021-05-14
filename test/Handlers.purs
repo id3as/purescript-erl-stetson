@@ -1,9 +1,11 @@
 module Stetson.Test.Handlers where
 
 import Prelude
+
 import Data.Either (Either(..), either)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
+import Effect.Class (liftEffect)
 import Erl.Atom (atom)
 import Erl.Cowboy.Handlers.Rest (notMoved)
 import Erl.Cowboy.Req (ReadBodyResult(..), Req, readBody, setBody)
@@ -14,14 +16,15 @@ import Erl.Data.List (List, (:), nil)
 import Erl.Data.Tuple (Tuple2, tuple2, tuple3)
 import Erl.ModuleName (NativeModuleName(..))
 import Foreign (unsafeToForeign)
-import Pinto (ServerName(..), StartLinkResult)
-import Pinto.Gen as Gen
+import Pinto (RegistryName(..), StartLinkResult)
+import Pinto.GenServer as GS
+import Pinto.Types (RegistryReference(..))
 import Simple.JSON (class WriteForeign, readJSON, writeJSON)
 import Stetson (Authorized(..), RestResult, SimpleStetsonHandler, StetsonHandler)
 import Stetson as Stetson
 import Stetson.Rest as Rest
-import Stetson.Types (routeHandler)
 import Stetson.Test.Routes as TestRoutes
+import Stetson.Types (routeHandler)
 import Unsafe.Coerce (unsafeCoerce)
 
 newtype State
@@ -32,21 +35,25 @@ type HandlerState
     , userData :: Maybe String
     }
 
-serverName :: ServerName State Unit
+data Stop = Stop
+data Cont = Cont
+type Msg = Unit
+
+serverName :: RegistryName (GS.ServerType Cont Stop Msg State)
 serverName = Local $ atom "test_server"
 
-startLink :: Boolean -> Effect StartLinkResult
+startLink :: Boolean -> Effect (StartLinkResult (GS.ServerPid Cont Stop Msg State))
 startLink oldStyle
-  | oldStyle == true = Gen.startLink serverName testStetsonConfig2
-  | otherwise = Gen.startLink serverName testStetsonConfig
+  | oldStyle = GS.startLink $ (GS.defaultSpec testStetsonConfig2) { name = Just serverName }
+  | otherwise = GS.startLink $ (GS.defaultSpec testStetsonConfig) { name = Just serverName }
 
 stopLink :: Effect Unit
-stopLink = Gen.stop serverName
+stopLink = GS.stop (ByName serverName)
 
-testStetsonConfig :: Gen.Init State Unit
+testStetsonConfig :: GS.InitFn Cont Stop Msg State
 testStetsonConfig = do
   void
-    $ Gen.lift
+    $ liftEffect
     $ Stetson.startClear "http_listener"
     $ Stetson.configure
         { routes =
@@ -56,13 +63,13 @@ testStetsonConfig = do
             }
         , bindPort = 3001
         }
-  pure $ State {}
+  pure $ GS.InitOk $ State {}
 
 --- Retain the old builder
-testStetsonConfig2 :: Gen.Init State Unit
+testStetsonConfig2 :: GS.InitFn Cont Stop Msg State
 testStetsonConfig2 = do
   void
-    $ Gen.lift
+    $ liftEffect
     $ Stetson.configure
     # Stetson.routes TestRoutes.apiRoute
         ( { "TestBarebones": bareBonesHandler
@@ -73,7 +80,7 @@ testStetsonConfig2 = do
     # Stetson.bindTo 0 0 0 0
     # Stetson.cowboyRoutes cowboyRoutes
     # Stetson.startClear "http_listener2"
-  pure $ State {}
+  pure $ GS.InitOk $ State {}
 
 --- Elementary rest handler
 bareBonesHandler :: StetsonHandler Unit HandlerState

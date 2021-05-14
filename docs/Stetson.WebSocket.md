@@ -50,6 +50,6 @@ Add a terminate callback to the provided StetsonHandler
 #### `lift`
 
 ``` purescript
-lift :: forall m a t. MonadTrans t => Monad m => m a -> t m a
+lift :: forall t m a. MonadTrans t => Monad m => m a -> t m a
 ```
 

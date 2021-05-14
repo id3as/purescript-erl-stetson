@@ -2,11 +2,13 @@ let base = ./spago.dhall
 
 in    base
     ⫽ { sources =
-          base.sources # [ "**/*.purs" ]
+          base.sources # [ "test/**/*.purs" ]
       , dependencies =
           base.dependencies # [
-          , "erl-test-eunit"
           , "simple-json"
           , "erl-pinto"
+          , "assert"
+          , "erl-binary"
+          , "newtype"
           ]
       }
