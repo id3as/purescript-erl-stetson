@@ -18,6 +18,7 @@ src/compiled_ps: output/.complete
 
 output/.complete: $(PS_SOURCEFILES) $(PS_ERL_FFI) $(PS_TEST_SOURCEFILES) $(PS_TEST_ERL_FFI) .spago
 	echo Stuff updated, running spago
+	spago build # check the regular spago.dhall is correct, but then build test code
 	spago -x test.dhall build && touch output/.complete
 
 docs: $(PS_SOURCEFILES) $(PS_ERL_FFI) src/compiled_ps

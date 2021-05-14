@@ -10,5 +10,7 @@ in    base
           , "assert"
           , "erl-binary"
           , "newtype"
+          , "erl-test-eunit"
+          , "free"
           ]
       }
