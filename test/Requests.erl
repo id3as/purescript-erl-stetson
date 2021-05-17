@@ -1,12 +1,12 @@
 -module(stetson_test_requests@foreign).
--export([test_fully_loaded/1]).
+-export([testFullyLoaded/2]).
 
-test_fully_loaded(Port) -> fun() ->
+testFullyLoaded(Url, Port) -> fun() ->
   application:ensure_all_started(gun),
   {ok, ConnPid} = gun:open("localhost", Port),
   {ok, _Protocol} = gun:await_up(ConnPid),
 
-  StreamRef = gun:get(ConnPid, <<"/api/testfullyloaded">>, [{<<"accept">>, "application/json"}]),
+  StreamRef = gun:get(ConnPid, Url, [{<<"accept">>, "application/json"}]),
 
   receive
     {gun_response, ConnPid, StreamRef, fin, _Status, _Headers} ->

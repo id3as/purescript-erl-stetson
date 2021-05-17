@@ -8,20 +8,16 @@ PS_ERL_FFI = $(shell find ${PS_SRC} -type f -name \*.erl)
 PS_TEST_SOURCEFILES = $(shell find ${TEST_SRC} -type f -name \*.purs)
 PS_TEST_ERL_FFI = $(shell find ${TEST_SRC} -type f -name \*.erl)
 
-all: src/compiled_ps erl docs
+all: erl docs
 
 ci: all test
 
-src/compiled_ps: output/.complete
-	rm -f $$PWD/src/compiled_ps
-	ln -s $$PWD/output $$PWD/src/compiled_ps
-
 output/.complete: $(PS_SOURCEFILES) $(PS_ERL_FFI) $(PS_TEST_SOURCEFILES) $(PS_TEST_ERL_FFI) .spago
 	echo Stuff updated, running spago
-	spago build # check the regular spago.dhall is correct, but then build test code
+	# spago build # check the regular spago.dhall is correct, but then build test code
 	spago -x test.dhall build && touch output/.complete
 
-docs: $(PS_SOURCEFILES) $(PS_ERL_FFI) src/compiled_ps
+docs: $(PS_SOURCEFILES) $(PS_ERL_FFI) output/.complete
 	mkdir -p docs
 	spago docs --format markdown
 	cp generated-docs/md/Stetson*.md docs
@@ -43,7 +39,7 @@ testbuild: erl
 test: erl
 	make -C test test
 
-erl: src/compiled_ps
+erl: output/.complete
 	mkdir -p ebin
 	erlc -o ebin/ output/*/*.erl
 

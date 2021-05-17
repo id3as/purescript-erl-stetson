@@ -1,7 +1,6 @@
 module Stetson.Test.Handlers where
 
 import Prelude
-
 import Data.Either (Either(..), either)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
@@ -35,20 +34,46 @@ type HandlerState
     , userData :: Maybe String
     }
 
-data Stop = Stop
-data Cont = Cont
-type Msg = Unit
+data Stop
+  = Stop
+
+data Cont
+  = Cont
+
+type Msg
+  = Unit
+
+data ServerConfig = NewStyle | OldStyle | NestedRoutes
 
 serverName :: RegistryName (GS.ServerType Cont Stop Msg State)
 serverName = Local $ atom "test_server"
 
-startLink :: Boolean -> Effect (StartLinkResult (GS.ServerPid Cont Stop Msg State))
-startLink oldStyle
-  | oldStyle = GS.startLink $ (GS.defaultSpec testStetsonConfig2) { name = Just serverName }
-  | otherwise = GS.startLink $ (GS.defaultSpec testStetsonConfig) { name = Just serverName }
+startLink :: ServerConfig -> Effect (StartLinkResult (GS.ServerPid Cont Stop Msg State))
+startLink = case _ of
+  OldStyle -> GS.startLink $ (GS.defaultSpec testStetsonConfig2) { name = Just serverName }
+  NewStyle -> GS.startLink $ (GS.defaultSpec testStetsonConfig) { name = Just serverName }
+  NestedRoutes -> GS.startLink $ (GS.defaultSpec testStetsonConfigNested) { name = Just serverName }
+
 
 stopLink :: Effect Unit
 stopLink = GS.stop (ByName serverName)
+
+routes ::
+  { "TestBarebones" ::
+      StetsonHandler Unit
+        { handler :: String
+        , userData :: Maybe String
+        }
+  , "TestFullyLoaded" ::
+      StetsonHandler Unit
+        { handler :: String
+        , userData :: Maybe String
+        }
+  }
+routes =
+  { "TestBarebones": bareBonesHandler
+  , "TestFullyLoaded": fullyLoadedHandler
+  }
 
 testStetsonConfig :: GS.InitFn Cont Stop Msg State
 testStetsonConfig = do
@@ -56,11 +81,7 @@ testStetsonConfig = do
     $ liftEffect
     $ Stetson.startClear "http_listener"
     $ Stetson.configure
-        { routes =
-          Stetson.routes2 TestRoutes.apiRoute
-            { "TestBarebones": bareBonesHandler
-            , "TestFullyLoaded": fullyLoadedHandler
-            }
+        { routes = Stetson.routes2 TestRoutes.apiRoute routes
         , bindPort = 3001
         }
   pure $ GS.InitOk $ State {}
@@ -71,15 +92,26 @@ testStetsonConfig2 = do
   void
     $ liftEffect
     $ Stetson.configure
-    # Stetson.routes TestRoutes.apiRoute
-        ( { "TestBarebones": bareBonesHandler
-          , "TestFullyLoaded": fullyLoadedHandler
-          }
-        )
+    # Stetson.routes TestRoutes.apiRoute routes
     # Stetson.port 3000
     # Stetson.bindTo 0 0 0 0
     # Stetson.cowboyRoutes cowboyRoutes
     # Stetson.startClear "http_listener2"
+  pure $ GS.InitOk $ State {}
+
+testStetsonConfigNested :: GS.InitFn Cont Stop Msg State
+testStetsonConfigNested = do
+  void
+    $ liftEffect
+    $ Stetson.startClear "http_listener3"
+    $ Stetson.configure
+        { routes =
+          Stetson.routes2 TestRoutes.nestedApiRoute
+            { "One": routes
+            , "Two": routes
+            }
+        , bindPort = 3002
+        }
   pure $ GS.InitOk $ State {}
 
 --- Elementary rest handler

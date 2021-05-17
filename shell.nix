@@ -12,14 +12,14 @@ let
     builtins.fetchGit {
       url = "https://github.com/purerl/nixpkgs-purerl.git";
       ref = "master";
-      rev = "b3f10cd33107f220e4328f0222d3d026bf4f5f99";
+      rev = "0f28e40f9942c1449bfa0d400dee49a517102047";
     };
 
   purerlSupport =
     builtins.fetchGit {
       name = "purerl-support-packages";
       url = "https://github.com/id3as/nixpkgs-purerl-support.git";
-      rev = "7dda9cdff0550e6138cfa1f46b83f09fe0d92809";
+      rev = "5a4208e312f724742ecdfaf3134007d37624c413";
     };
 
   nixpkgs =
@@ -53,11 +53,11 @@ mkShell {
     erlangChannel.rebar3
     erlangChannel.erlang-ls
 
-    purerl-support.purescript-0-13-8
-    purerl-support.spago-0-16-0
+    purerl-support.purescript-0-14-1
+    purerl-support.spago-0-20-3
 
     # Purerl backend for purescript
-    purerl.purerl-0-0-7
+    purerl.purerl-0-0-9
 
   ];
 }
