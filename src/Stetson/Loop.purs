@@ -4,6 +4,7 @@ module Stetson.Loop
   , init
   , handler
   , info
+  , terminate
   , module Exports
   ) where
 
