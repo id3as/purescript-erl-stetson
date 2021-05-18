@@ -12,6 +12,5 @@ in    base
           , "newtype"
           , "erl-test-eunit"
           , "free"
-          , "debug"
           ]
       }

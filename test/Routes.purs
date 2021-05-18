@@ -34,19 +34,13 @@ routeUrl = RouteDuplex.print apiRoute
 
 data NestedRoute
   = One Route
-  -- | Two Route
-derive instance genericRNestedRoutee :: Generic NestedRoute _
+  | Two Route
+  
+derive instance genericNestedRoute :: Generic NestedRoute _
 
-instance showRouNestedRoutete :: Show NestedRoute where
+instance showNestedRoute :: Show NestedRoute where
   show = genericShow
 
-
--- apiRoute' :: forall t44 t45.
---   Generic t44 t45 => GRouteDuplex t45
---                        ( "TestBarebones" :: RouteDuplex NoArguments NoArguments
---                        , "TestFullyLoaded" :: RouteDuplex NoArguments NoArguments
---                        )
---                       => RouteDuplex t44 t44
 apiRoute' :: RouteDuplex' Route
 apiRoute' = sum
         { "TestBarebones": "api" / "testbarebones" / noArgs

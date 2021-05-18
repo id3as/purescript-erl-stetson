@@ -18,7 +18,6 @@ You can edit this file as you like.
   , "foldable-traversable"
   , "foreign"
   , "maybe"
-  , "partial"
   , "prelude"
   , "record"
   , "routing-duplex"

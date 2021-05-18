@@ -27,16 +27,16 @@ nestedUrl = "/api/one/api/testfullyloaded" -- I know
 tests :: Free TestF Unit
 tests =
   setup startup do
-    -- test "legacy syntax get" do
-    --   void $ startLink OldStyle >>= either (const $ throw "startlink failed") pure
-    --   result <- snd <$> Requests.testFullyLoaded fullyLoadedUrl 3000
-    --   stopLink
-    --   assertEqual { actual: result, expected: Just "{\"handler\":\"fullyLoadedHandler\"}" }
-    -- test "current syntax get" do
-    --   void $ startLink NewStyle >>= either (const $ throw "startlink failed") pure
-    --   result <- snd <$> Requests.testFullyLoaded fullyLoadedUrl 3001
-    --   stopLink
-    --   assertEqual { actual: result, expected: Just "{\"handler\":\"fullyLoadedHandler\"}" }
+    test "legacy syntax get" do
+      void $ startLink OldStyle >>= either (const $ throw "startlink failed") pure
+      result <- snd <$> Requests.testFullyLoaded fullyLoadedUrl 3000
+      stopLink
+      assertEqual { actual: result, expected: Just "{\"handler\":\"fullyLoadedHandler\"}" }
+    test "current syntax get" do
+      void $ startLink NewStyle >>= either (const $ throw "startlink failed") pure
+      result <- snd <$> Requests.testFullyLoaded fullyLoadedUrl 3001
+      stopLink
+      assertEqual { actual: result, expected: Just "{\"handler\":\"fullyLoadedHandler\"}" }
     test "nested" do
       void $ startLink NestedRoutes >>= either (const $ throw "startlink failed") pure
       result <- snd <$> Requests.testFullyLoaded nestedUrl 3002
