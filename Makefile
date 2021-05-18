@@ -33,9 +33,6 @@ clean:
 cleanspago: clean
 	rm -Rf .spago
 
-testbuild: erl
-	make -C test testbuild
-
 test: erl
 	make -C test test
 
