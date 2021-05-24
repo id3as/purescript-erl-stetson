@@ -12,11 +12,10 @@ endif
 all: src/compiled_ps
 
 clean:
-	rm -rf $(OUTPUT)/*
 	rm -f _build/default/lib/*/ebin/*.beam
 
 testbuild:
-	ln -sf ../../src/compiled_ps/ src/
+	ln -sf ../../output/ src/compiled_ps
 	rebar3 compile
 
 test: testbuild

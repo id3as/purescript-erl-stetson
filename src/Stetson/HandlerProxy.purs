@@ -55,7 +55,7 @@ init =
 
 terminate :: forall msg state. EffectFn3 Foreign Req (State msg state) Atom
 terminate =
-  mkEffectFn3 \fgn req state@{ handler, innerState } -> do
+  mkEffectFn3 \fgn req { handler, innerState } -> do
     case handler.terminate of
       Just t -> do
         _ <- t fgn req innerState

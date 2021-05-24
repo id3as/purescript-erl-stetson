@@ -1,6 +1,7 @@
 module RoutingDuplexMiddleware (ModuleInfo, routes, execute, ExecuteResult, UnmatchedHandler(..), Config) where
 
 import Prelude
+
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Effect (Effect)

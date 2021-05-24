@@ -1,7 +1,8 @@
 module Stetson.Routing where
 
 import Prelude
-import Data.Generic.Rep (Argument(..), Constructor(..), NoArguments(..), Product(..), Sum(..))
+
+import Data.Generic.Rep (class Generic, Argument(..), Constructor(..), NoArguments(..), Product(..), Sum(..), from)
 import Data.Symbol (class IsSymbol, SProxy(..))
 import Prim.Row as Row
 import Record as Record
@@ -45,6 +46,9 @@ instance gDispatchStatic1 :: GDispatchCtor (Argument (Array String)) StaticAsset
   gDispatchC route (Argument a) = StaticRoute a route
 else instance gDispatchStatic1Ignore :: GDispatchCtor (Argument a) (a -> StaticAssetLocation) where
   gDispatchC route (Argument a) = StaticRoute [] (route a)
+
+instance gDispatchRecord :: (Generic a rep, GDispatch rep r) => GDispatchCtor (Argument a) (Record r) where
+  gDispatchC r (Argument a) = gDispatch r (from a)
 
 instance gDispatchCN ::
   ( GDispatchCtor right b
