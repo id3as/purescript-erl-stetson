@@ -1,6 +1,7 @@
 module Stetson.HandlerProxy where
 
 import Prelude
+
 import Control.Monad.State (evalStateT)
 import Data.FunctorWithIndex (mapWithIndex)
 import Data.Maybe (Maybe(..))
@@ -42,9 +43,9 @@ type State msg state
 type InitHandler c s
   = EffectFn2 Req c (InitResult s)
 
-init :: forall msg state. EffectFn2 Req (StetsonHandlerCallbacks msg state) ElidedInitResult
+init :: forall msg state. EffectFn2 Req (State msg state) ElidedInitResult
 init =
-  mkEffectFn2 \req handler -> do
+  mkEffectFn2 \req { handler } -> do
     res <- handler.init req
     case res of
       (Rest req2 innerState) -> pure $ restInitResult { handler, innerState, acceptHandlers: nil, provideHandlers: nil } req2
@@ -55,12 +56,13 @@ init =
 
 terminate :: forall msg state. EffectFn3 Foreign Req (State msg state) Atom
 terminate =
-  mkEffectFn3 \fgn req { handler, innerState } -> do
-    case handler.terminate of
-      Just t -> do
-        _ <- t fgn req innerState
-        pure $ atom "ok"
-      Nothing -> pure $ atom "ok"
+  mkEffectFn3 \err req z -> do
+    case z of { handler, innerState } ->
+      case handler.terminate of
+        Just t -> do
+          _ <- t err req innerState
+          pure $ atom "ok"
+        Nothing -> pure $ atom "ok"
 
 --
 -- Rest handler

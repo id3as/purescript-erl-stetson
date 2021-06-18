@@ -158,7 +158,7 @@ startClear name config@{ bindAddress, bindPort, streamHandlers: streamHandlers_,
       tuple2 req
         $ Right
             { mod: nativeModuleName ModuleNames.stetsonHandlerProxy
-            , args: unsafeToForeign handler
+            , args: unsafeToForeign { handler, innerState: unit, acceptHandlers: nil, provideHandlers: nil }
             }
 
 stop :: String -> Effect Unit
