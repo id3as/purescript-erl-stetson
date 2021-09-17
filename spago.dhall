@@ -9,6 +9,7 @@ You can edit this file as you like.
   , "erl-atom"
   , "erl-cowboy"
   , "erl-lists"
+  , "erl-kernel"
   , "erl-maps"
   , "erl-modules"
   , "erl-process"
