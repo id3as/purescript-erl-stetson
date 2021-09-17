@@ -134,6 +134,7 @@ let overrides =
           , "erl-maps"
           , "erl-tuples"
           , "erl-modules"
+          , "erl-kernel"
           , "foreign"
           ]
         , version = "a4963bbd6f3e87e637d088f0d16097405c0f2a3b"
