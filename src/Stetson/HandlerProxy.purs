@@ -1,7 +1,6 @@
 module Stetson.HandlerProxy where
 
 import Prelude
-
 import Control.Monad.State (evalStateT)
 import Data.FunctorWithIndex (mapWithIndex)
 import Data.Maybe (Maybe(..))
@@ -13,6 +12,7 @@ import Erl.Cowboy.Handlers.Rest (RestResult, restResult, stop, switchHandler) as
 import Erl.Cowboy.Handlers.Rest as CowboyRest
 import Erl.Cowboy.Handlers.WebSocket as CowboyWS
 import Erl.Cowboy.Req (Req)
+import Erl.Data.Binary.IOData (IOData)
 import Erl.Data.List (List, nil, (!!))
 import Erl.Data.Tuple (tuple2, uncurry2)
 import Erl.ModuleName (NativeModuleName(..))
@@ -37,7 +37,7 @@ type State msg state
   = { handler :: StetsonHandlerCallbacks msg state
     , innerState :: state
     , acceptHandlers :: List (Req -> state -> Effect (RestResult Boolean state))
-    , provideHandlers :: List (Req -> state -> Effect (RestResult String state))
+    , provideHandlers :: List (Req -> state -> Effect (RestResult IOData state))
     }
 
 type InitHandler c s
@@ -57,12 +57,13 @@ init =
 terminate :: forall msg state. EffectFn3 Foreign Req (State msg state) Atom
 terminate =
   mkEffectFn3 \err req z -> do
-    case z of { handler, innerState } ->
-      case handler.terminate of
-        Just t -> do
-          _ <- t err req innerState
-          pure $ atom "ok"
-        Nothing -> pure $ atom "ok"
+    case z of
+      { handler, innerState } ->
+        case handler.terminate of
+          Just t -> do
+            _ <- t err req innerState
+            pure $ atom "ok"
+          Nothing -> pure $ atom "ok"
 
 --
 -- Rest handler
@@ -204,7 +205,7 @@ accept i =
   mkEffectFn2 \req state@{ acceptHandlers } ->
     call (acceptHandlers !! i) req state
 
-provide :: forall msg state. Int -> EffectFn2 Req (State msg state) (Cowboy.RestResult String (State msg state))
+provide :: forall msg state. Int -> EffectFn2 Req (State msg state) (Cowboy.RestResult IOData (State msg state))
 provide i =
   mkEffectFn2 \req state@{ provideHandlers } ->
     call (provideHandlers !! i) req state
@@ -230,25 +231,25 @@ accept_5 = accept 5
 accept_6 :: forall msg state. EffectFn2 Req (State msg state) (Cowboy.RestResult Boolean (State msg state))
 accept_6 = accept 6
 
-provide_0 :: forall msg state. EffectFn2 Req (State msg state) (Cowboy.RestResult String (State msg state))
+provide_0 :: forall msg state. EffectFn2 Req (State msg state) (Cowboy.RestResult IOData (State msg state))
 provide_0 = provide 0
 
-provide_1 :: forall msg state. EffectFn2 Req (State msg state) (Cowboy.RestResult String (State msg state))
+provide_1 :: forall msg state. EffectFn2 Req (State msg state) (Cowboy.RestResult IOData (State msg state))
 provide_1 = provide 1
 
-provide_2 :: forall msg state. EffectFn2 Req (State msg state) (Cowboy.RestResult String (State msg state))
+provide_2 :: forall msg state. EffectFn2 Req (State msg state) (Cowboy.RestResult IOData (State msg state))
 provide_2 = provide 2
 
-provide_3 :: forall msg state. EffectFn2 Req (State msg state) (Cowboy.RestResult String (State msg state))
+provide_3 :: forall msg state. EffectFn2 Req (State msg state) (Cowboy.RestResult IOData (State msg state))
 provide_3 = provide 3
 
-provide_4 :: forall msg state. EffectFn2 Req (State msg state) (Cowboy.RestResult String (State msg state))
+provide_4 :: forall msg state. EffectFn2 Req (State msg state) (Cowboy.RestResult IOData (State msg state))
 provide_4 = provide 4
 
-provide_5 :: forall msg state. EffectFn2 Req (State msg state) (Cowboy.RestResult String (State msg state))
+provide_5 :: forall msg state. EffectFn2 Req (State msg state) (Cowboy.RestResult IOData (State msg state))
 provide_5 = provide 5
 
-provide_6 :: forall msg state. EffectFn2 Req (State msg state) (Cowboy.RestResult String (State msg state))
+provide_6 :: forall msg state. EffectFn2 Req (State msg state) (Cowboy.RestResult IOData (State msg state))
 provide_6 = provide 6
 
 --

@@ -123,6 +123,21 @@ let overrides =
       { erl-lists =
               upstream.erl-lists
           //  { version = "1d059f0df04f1c83f35a6eae706bd86cda8b015e" }
+      , erl-cowboy =
+        { repo = "https://github.com/id3as/purescript-erl-cowboy.git"
+        , dependencies =
+          [ "console"
+          , "effect"
+          , "erl-atom"
+          , "erl-binary"
+          , "erl-lists"
+          , "erl-maps"
+          , "erl-tuples"
+          , "erl-modules"
+          , "foreign"
+          ]
+        , version = "a4963bbd6f3e87e637d088f0d16097405c0f2a3b"
+        }
     , erl-process =
              upstream.erl-process
          //  { repo = "https://github.com/id3as/purescript-erl-process.git"

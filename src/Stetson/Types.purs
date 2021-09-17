@@ -47,6 +47,7 @@ import Erl.Cowboy.Handlers.Rest (MovedResult)
 import Erl.Cowboy.Handlers.WebSocket (Frame)
 import Erl.Cowboy.Req (Req)
 import Erl.Cowboy.Routes as Routes
+import Erl.Data.Binary.IOData (IOData)
 import Erl.Data.List (List)
 import Erl.Data.Tuple (Tuple2, Tuple4)
 import Erl.ModuleName (NativeModuleName)
@@ -96,7 +97,7 @@ type AcceptHandler state
 
 -- | A callback invoked to 'provide' a specific content type
 type ProvideHandler state
-  = Req -> state -> Effect (RestResult String state)
+  = Req -> state -> Effect (RestResult IOData state)
 
 -- | A builder containing the complete set of callbacks for any sort of request
 data StetsonHandler msg state
