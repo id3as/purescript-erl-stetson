@@ -10,7 +10,7 @@ import Erl.Cowboy.Handlers.Rest (notMoved)
 import Erl.Cowboy.Req (ReadBodyResult(..), Req, readBody, setBody)
 import Erl.Cowboy.Routes (InitialState(..), Path(..), matchSpec)
 import Erl.Data.Binary (Binary)
-import Erl.Data.Binary.IOData (IOData, fromBinary, toBinary)
+import Erl.Data.Binary.IOData (IOData, fromBinary, toBinary, fromString)
 import Erl.Data.List (List, (:), nil)
 import Erl.Data.Tuple (Tuple2, tuple2, tuple3)
 import Erl.ModuleName (NativeModuleName(..))
@@ -150,11 +150,11 @@ fullyLoadedHandler =
 
   isAuthorizedHandler req state = Rest.result Authorized req state
 
-  isConflict req state = false
+  isConflict _req _state = false
 
   acceptJson req state = do
     body <- allBody req mempty
-    result <- either (pure <<< Left <<< show) handlePayload $ readJSON $ unsafeCoerce body
+    _result <- either (pure <<< Left <<< show) handlePayload $ readJSON $ unsafeCoerce body
     Rest.result true req state
 
   handlePayload :: forall a. String -> Effect (Either a HandlerState)
@@ -192,7 +192,7 @@ test2 =
       -- The point being that Left -> Failure -> False -> Err as the body
       Left err -> Rest.result false (setBody err req) state
       -- And Right -> Success -> True and no body
-      Right c -> Rest.result true req state
+      Right _c -> Rest.result true req state
 
   handlePayload :: forall a. String -> Effect (Either a HandlerState)
   handlePayload payload = do
@@ -202,7 +202,7 @@ allBody :: Req -> IOData -> Effect Binary
 allBody req acc = do
   readResult <- (readBody req)
   case readResult of
-    (FullData body req2) -> pure $ toBinary $ acc <> (fromBinary body)
+    (FullData body _req2) -> pure $ toBinary $ acc <> (fromBinary body)
     (PartialData body req2) -> (allBody req2 $ acc <> (fromBinary body))
 
 -- Simple rest response
@@ -213,5 +213,5 @@ restHandler val req state = Rest.result val req state
 cowboyRoutes :: List Path
 cowboyRoutes = Path (tuple3 (matchSpec "/foo") (NativeModuleName $ atom "foo") (InitialState $ unsafeToForeign {})) : nil
 
-jsonWriter :: forall a. WriteForeign a => Tuple2 String (Req -> a -> (Effect (RestResult String a)))
-jsonWriter = tuple2 "application/json" (\req state -> Rest.result (writeJSON state) req state)
+jsonWriter :: forall a. WriteForeign a => Tuple2 String (Req -> a -> (Effect (RestResult IOData a)))
+jsonWriter = tuple2 "application/json" (\req state -> Rest.result (fromString $ writeJSON state) req state)

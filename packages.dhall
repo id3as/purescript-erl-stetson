@@ -117,12 +117,17 @@ let additions =
 -------------------------------
 -}
 let upstream =
-      https://github.com/purerl/package-sets/releases/download/erl-0.14.1-20210426/packages.dhall sha256:19829ae168a3223e007cecfaaffcd5cf78e00e20974393ee1721a543872de75b
+      https://github.com/purerl/package-sets/releases/download/erl-0.14.3-20210709/packages.dhall sha256:9b07e1fe89050620e2ad7f7623d409f19b5e571f43c2bdb61242377f7b89d941
 
 let overrides =
       { erl-lists =
               upstream.erl-lists
           //  { version = "1d059f0df04f1c83f35a6eae706bd86cda8b015e" }
+       , erl-binary =
+        { dependencies = [ "prelude", "erl-lists" ]
+        , repo = "https://github.com/id3as/purescript-erl-binary.git"
+        , version = "423f1af8437670beab03463b3e9bc0a487f05ba4"
+        }
       , erl-cowboy =
         { repo = "https://github.com/id3as/purescript-erl-cowboy.git"
         , dependencies =
@@ -159,6 +164,55 @@ let additions = {
           , "foreign"
           ]
         , version = "f4200a0ed787c74649e4f2503a77df3c6cb5c21d"
+        }
+      , erl-kernel =
+        { dependencies =
+          [ "convertable-options"
+          , "datetime"
+          , "effect"
+          , "either"
+          , "erl-atom"
+          , "erl-binary"
+          , "erl-lists"
+          , "erl-process"
+          , "erl-tuples"
+          , "erl-untagged-union"
+          , "foldable-traversable"
+          , "foreign"
+          , "functions"
+          , "integers"
+          , "maybe"
+          , "newtype"
+          , "partial"
+          , "prelude"
+          , "record"
+          , "typelevel-prelude"
+          , "unsafe-coerce"
+          ]
+        , repo = "https://github.com/id3as/purescript-erl-kernel.git"
+        , version = "2c1f78a3aa6993e91e342a984c522b87b98bbb2b"
+        }
+      , convertable-options =
+        { repo = "https://github.com/natefaubion/purescript-convertable-options"
+        , dependencies = [ "effect", "maybe", "record" ]
+        , version = "f20235d464e8767c469c3804cf6bec4501f970e6"
+        }
+      , erl-untagged-union =
+        { dependencies =
+          [ "erl-atom"
+          , "erl-binary"
+          , "erl-lists"
+          , "erl-tuples"
+          , "debug"
+          , "foreign"
+          , "typelevel-prelude"
+          , "maybe"
+          , "partial"
+          , "prelude"
+          , "unsafe-coerce"
+          ]
+        , repo = "https://github.com/id3as/purescript-erl-untagged-union.git"
+        , version = "eb7a10c7930c4b99f1a6bfce767daa814d45dd2b"
         }
 
 }
