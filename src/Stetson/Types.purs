@@ -52,8 +52,10 @@ import Erl.Cowboy.Routes as Routes
 import Erl.Data.Binary.IOData (IOData)
 import Erl.Data.List (List)
 import Erl.Data.Tuple (Tuple2, Tuple4)
+import Erl.Kernel.Tcp as Tcp
 import Erl.ModuleName (NativeModuleName)
 import Erl.Process (Process, class HasSelf, class ReceivesMessage)
+import Erl.Ssl as Ssl
 import Foreign (Foreign)
 import Control.Monad.State as State
 import Control.Monad.State (class MonadState)
@@ -261,6 +263,8 @@ type StetsonConfig a
     , bindAddress :: Tuple4 Int Int Int Int
     , streamHandlers :: Maybe (List NativeModuleName)
     , middlewares :: Maybe (List NativeModuleName)
+    , tcpOptions :: Maybe (Record Tcp.ListenOptions)
+    , tlsOptions :: Maybe (Record Ssl.ListenOptions)
     , cowboyRoutes :: List Routes.Path
     , routes :: RouteConfig a
     }

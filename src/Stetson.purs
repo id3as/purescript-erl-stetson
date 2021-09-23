@@ -9,19 +9,24 @@ module Stetson
   , bindTo
   , streamHandlers
   , middlewares
+  , tcpOptions
+  , tlsOptions
   , startClear
+  , startTls
   , stop
   , module Stetson.Types
   ) where
 
 import Prelude
+
+import Control.Alt ((<|>))
 import Cowboy.Static as CowboyStatic
 import Data.Either (Either(..))
 import Data.Generic.Rep (class Generic, NoArguments, from)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Effect (Effect)
 import Erl.Atom (Atom, atom)
-import Erl.Cowboy (ProtoOpt(..), TransOpt(..), protocolOpts)
+import Erl.Cowboy (ProtocolOpts)
 import Erl.Cowboy as Cowboy
 import Erl.Cowboy.Req (Req)
 import Erl.Cowboy.Routes (Path)
@@ -31,7 +36,10 @@ import Erl.Data.List as List
 import Erl.Data.Map (Map)
 import Erl.Data.Map as Map
 import Erl.Data.Tuple (tuple2, tuple3, tuple4)
+import Erl.Kernel.Inet (IpAddress(..), SocketAddress(..))
+import Erl.Kernel.Tcp as Tcp
 import Erl.ModuleName (NativeModuleName(..), nativeModuleName)
+import Erl.Ssl as Ssl
 import Foreign (Foreign, unsafeToForeign)
 import Routing.Duplex (RouteDuplex', root)
 import Routing.Duplex.Generic (noArgs)
@@ -40,7 +48,7 @@ import RoutingDuplexMiddleware as RoutingMiddleware
 import Stetson.ModuleNames as ModuleNames
 import Stetson.Routing (class GDispatch, gDispatch)
 import Stetson.Routing as Routing
-import Stetson.Types (AcceptHandler, Authorized(..), CowboyHandler(..), HandlerArgs, HttpMethod(..), InitHandler, InitResult(..), LoopCallResult(..), ProvideHandler, RestResult(..), RouteHandler(..), SimpleStetsonHandler, StaticAssetLocation(..), StetsonConfig, StetsonHandler(..), WebSocketCallResult(..), WebSocketHandleHandler, WebSocketInfoHandler, WebSocketInitHandler, RouteConfig, emptyHandler, mkStetsonRoute, runStetsonRoute)
+import Stetson.Types (AcceptHandler, Authorized(..), CowboyHandler(..), HandlerArgs, HttpMethod(..), InitHandler, InitResult(..), LoopCallResult(..), ProvideHandler, RestResult(..), RouteConfig, RouteHandler(..), SimpleStetsonHandler, StaticAssetLocation(..), StetsonHandler(..), WebSocketCallResult(..), WebSocketHandleHandler, WebSocketInfoHandler, WebSocketInitHandler, StetsonConfig, emptyHandler, mkStetsonRoute, runStetsonRoute)
 import Unsafe.Coerce (unsafeCoerce)
 
 -- | Creates a blank stetson config with default settings and no routes
@@ -55,6 +63,8 @@ configure =
             : mod "cowboy_handler"
             : nil
         )
+  , tcpOptions: Nothing
+  , tlsOptions: Nothing
   , cowboyRoutes: nil
   , routes:
       { routing: root noArgs
@@ -107,26 +117,49 @@ streamHandlers handlers config = (config { streamHandlers = Just handlers })
 middlewares :: forall a. List NativeModuleName -> StetsonConfig a -> StetsonConfig a
 middlewares mws config = (config { middlewares = Just mws })
 
+-- | Supply tcp transport options for cowboy/ranch
+tcpOptions :: forall a. Record Tcp.ListenOptions -> StetsonConfig a -> StetsonConfig a
+tcpOptions opts config = config { tcpOptions = Just opts }
+
+-- | Supply tls/ssl transport options for cowboy/ranch
+tlsOptions :: forall a. Record Ssl.ListenOptions -> StetsonConfig a -> StetsonConfig a
+tlsOptions opts config = config { tlsOptions = Just opts }
+
 -- | Start the listener with the specified name
 startClear :: forall a. String -> StetsonConfig a -> Effect (Either Foreign Unit)
-startClear name config@{ bindAddress, bindPort, streamHandlers: streamHandlers_, middlewares: middlewares_, cowboyRoutes: cowboyRoutes' } = do
-  let
-    dispatch = Routes.compile $ singleton $ Routes.anyHost $ reverse cowboyRoutes'
+startClear name config@{ bindAddress, bindPort, tcpOptions: tcpOptions_ } = do
+  let listenOpts = fromMaybe (Tcp.listenOptions {}) tcpOptions_
+      opts = Cowboy.defaultOptions { socketOpts = Just $ listenOpts 
+          { port = listenOpts.port <|> Just bindPort
+          , ip = listenOpts.ip <|> (Just $ IpAddress $ Ip4 bindAddress)
+          }
+        }
 
-    transOpts = Ip bindAddress : Port bindPort : nil
+  Cowboy.startClear (atom name) opts (protoOpts config)
 
-    protoOpts =
-      protocolOpts
-        $ singleton
-            ( Env
-                ( Map.empty # Cowboy.dispatch dispatch
-                    # RoutingMiddleware.routes config.routes.routing { dispatch: mapping, unmatched }
-                )
-            )
-        <> List.fromFoldable (StreamHandlers <$> streamHandlers_)
-        <> List.fromFoldable (Middlewares <$> middlewares_)
-  Cowboy.startClear (atom name) transOpts protoOpts
+-- | Start the TLS listener with the specified name
+startTls :: forall a. String -> StetsonConfig a -> Effect (Either Foreign Unit)
+startTls name config@{ bindAddress, bindPort, tlsOptions: tlsOptions_ } = do
+  let listenOpts = fromMaybe Ssl.defaultListenOptions tlsOptions_
+      opts = Cowboy.defaultOptions { socketOpts = Just $ listenOpts 
+          { port = listenOpts.port <|> Just bindPort
+          , ip = listenOpts.ip <|> (Just $ IpAddress $ Ip4 bindAddress)
+          }
+        }
+
+  Cowboy.startTls (atom name) opts (protoOpts config)
+
+protoOpts :: forall a. StetsonConfig a -> ProtocolOpts
+protoOpts config@{ streamHandlers: streamHandlers_, middlewares: middlewares_, cowboyRoutes: cowboyRoutes' } =
+  { env: Just ( Map.empty # Cowboy.dispatch dispatch
+                          # RoutingMiddleware.routes config.routes.routing { dispatch: mapping, unmatched }
+              )
+  , streamHandlers: streamHandlers_
+  , middlewares: middlewares_
+  }
+
   where
+  dispatch = Routes.compile $ singleton $ Routes.anyHost $ reverse cowboyRoutes'
   unmatched _ =
     if null cowboyRoutes' then
       Default
