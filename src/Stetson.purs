@@ -129,7 +129,7 @@ tlsOptions opts config = config { tlsOptions = Just opts }
 startClear :: forall a. String -> StetsonConfig a -> Effect (Either Foreign Unit)
 startClear name config@{ bindAddress, bindPort, tcpOptions: tcpOptions_ } = do
   let listenOpts = fromMaybe (Tcp.listenOptions {}) tcpOptions_
-      opts = Cowboy.defaultOptions { socketOpts = Just $ listenOpts 
+      opts = Cowboy.defaultOptions { socket_opts = Just $ listenOpts 
           { port = listenOpts.port <|> Just bindPort
           , ip = listenOpts.ip <|> (Just $ IpAddress $ Ip4 bindAddress)
           }
@@ -141,7 +141,7 @@ startClear name config@{ bindAddress, bindPort, tcpOptions: tcpOptions_ } = do
 startTls :: forall a. String -> StetsonConfig a -> Effect (Either Foreign Unit)
 startTls name config@{ bindAddress, bindPort, tlsOptions: tlsOptions_ } = do
   let listenOpts = fromMaybe Ssl.defaultListenOptions tlsOptions_
-      opts = Cowboy.defaultOptions { socketOpts = Just $ listenOpts 
+      opts = Cowboy.defaultOptions { socket_opts = Just $ listenOpts 
           { port = listenOpts.port <|> Just bindPort
           , ip = listenOpts.ip <|> (Just $ IpAddress $ Ip4 bindAddress)
           }

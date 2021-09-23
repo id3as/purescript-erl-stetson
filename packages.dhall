@@ -150,7 +150,7 @@ let overrides =
           , "tuples"
           , "unsafe-coerce"
           ]
-        , version = "57261fdbca118ec0cb7de3ee4a31f10d708e916b"
+        , version = "ca4dd4a6432817fbe6ef9ab1814046f6827046cd"
         }
       , erl-ranch =
         { dependencies =
@@ -174,7 +174,7 @@ let overrides =
           , "unsafe-coerce"
           ]
         , repo = "https://github.com/id3as/purescript-erl-ranch.git"
-        , version = "185e579b895aed58e5971920f9944c94bcac5fcb"
+        , version = "08a76bd850ba00c3a120c1d149bed07f9fcc165d"
         }
     , erl-process =
              upstream.erl-process
