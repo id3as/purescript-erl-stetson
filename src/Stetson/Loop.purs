@@ -1,16 +1,18 @@
 module Stetson.Loop
-  ( self
-  , initResult
+  ( initResult
   , init
   , handler
   , info
   , terminate
-  , module Exports
+  , module EffectExports
+  , module ProcessExports
   ) where
 
 import Prelude
 import Control.Monad.State as State
-import Control.Monad.Trans.Class (lift) as Exports
+import Effect.Class (liftEffect) as EffectExports
+import Erl.Process (self) as ProcessExports
+
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Erl.Cowboy.Req (Req)
@@ -30,9 +32,6 @@ info fn (StetsonHandler h) = StetsonHandler $ h { loopInfo = Just fn }
 -- | Add a terminate callback to the provided StetsonHandler
 terminate :: forall msg state. (Foreign -> Req -> state -> Effect Unit) -> StetsonHandler msg state -> StetsonHandler msg state
 terminate fn (StetsonHandler h) = (StetsonHandler $ h { terminate = Just fn })
-
-self :: forall msg. State.StateT (Process msg) Effect (Process msg)
-self = State.get
 
 initResult :: forall state. Req -> state -> Effect (InitResult state)
 initResult rq st = pure $ Loop rq st

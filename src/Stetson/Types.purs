@@ -9,7 +9,6 @@ module Stetson.Types
   , WebSocketHandleHandler
   , WebSocketResult(..)
   , WebSocketCallResult(..)
-  , WebSocketInternalState(..)
   , HttpMethod(..)
   , Authorized(..)
   , StetsonHandler(..)
@@ -29,17 +28,20 @@ module Stetson.Types
   , CowboyHandler(..)
   , LoopInitHandler(..)
   , LoopInfoHandler(..)
-  , LoopInternalState(..)
   , LoopResult(..)
   , LoopCallResult(..)
   , mkStetsonRoute
   , runStetsonRoute
   , emptyHandler
   , routeHandler
+  , unwrapResult
+  , ResultT
   ) where
 
 import Prelude
-import Control.Monad.State (StateT)
+import Control.Monad.Reader (ReaderT, runReaderT)
+import Control.Monad.Reader as Reader
+import Control.Monad.Reader.Class (class MonadAsk)
 import Data.Exists (mkExists, runExists, Exists)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
@@ -51,8 +53,12 @@ import Erl.Data.Binary.IOData (IOData)
 import Erl.Data.List (List)
 import Erl.Data.Tuple (Tuple2, Tuple4)
 import Erl.ModuleName (NativeModuleName)
-import Erl.Process (Process)
+import Erl.Process (Process, class HasSelf, class ReceivesMessage)
 import Foreign (Foreign)
+import Control.Monad.State as State
+import Control.Monad.State (class MonadState)
+import Control.Monad (class Monad)
+import Effect.Class (class MonadEffect)
 import Prim.Row (class Union)
 import Routing.Duplex (RouteDuplex')
 import Stetson.Utils (unsafeMergeOptional)
@@ -163,13 +169,27 @@ data WebSocketCallResult state
   | ReplyAndHibernate (List Frame) state
   | Stop state
 
--- | We'll probably end up with more in here than just the current pid..
-type WebSocketInternalState msg
-  = Process msg
+newtype ResultT msg result
+  = ResultT (ReaderT (Process msg) Effect result)
 
--- | All of the Loop handlers take place in a StateT so we can do things like get the current pid
+unwrapResult :: forall msg result. ResultT msg result -> (ReaderT (Process msg) Effect result)
+unwrapResult (ResultT inner) = inner
+
+derive newtype instance functorResultT :: Functor (ResultT msg)
+derive newtype instance applyResultT :: Apply (ResultT msg)
+derive newtype instance applicativeResultT :: Applicative (ResultT msg)
+derive newtype instance bindResultT :: Bind (ResultT msg)
+derive newtype instance monadResultT :: Monad (ResultT msg)
+derive newtype instance monadEffectResultT :: MonadEffect (ResultT msg)
+derive newtype instance monadAskResultT :: MonadAsk (Process msg) (ResultT msg)
+instance messageTypeResult :: ReceivesMessage (ResultT msg) msg
+
+instance handlerT_HasSelf :: HasSelf (ResultT msg) msg where
+  self = Reader.ask
+
+-- | All of the Loop handlers take place in a ReaderT so we can do things like get the current pid
 type WebSocketResult msg r
-  = StateT (WebSocketInternalState msg) Effect r
+  = ResultT msg r
 
 -- | Callback used to kick off the WebSocket handler
 -- | This is a good time to get hold of 'self' and set up subscriptions
@@ -191,13 +211,10 @@ data LoopCallResult state
   | LoopHibernate Req state
   | LoopStop Req state
 
--- | We'll probably end up with more in here than just the current pid..
-type LoopInternalState msg
-  = Process msg
 
--- | All of the Loop handlers take place in a StateT so we can do things like get the current pid
+-- | All of the Loop handlers take place in a ReaderT so we can do things like get the current pid
 type LoopResult msg r
-  = StateT (LoopInternalState msg) Effect r
+  = ResultT msg r
 
 -- | Callback used to kick off the Loop handler, it is here where subscriptions should be
 -- | created, and in their callbacks the messages should be passed into the router for dealing with in the info callback
