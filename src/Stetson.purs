@@ -18,7 +18,6 @@ module Stetson
   ) where
 
 import Prelude
-
 import Control.Alt ((<|>))
 import Cowboy.Static as CowboyStatic
 import Data.Either (Either(..))
@@ -41,7 +40,7 @@ import Erl.Kernel.Tcp as Tcp
 import Erl.ModuleName (NativeModuleName(..), nativeModuleName)
 import Erl.Ssl as Ssl
 import Foreign (Foreign, unsafeToForeign)
-import Routing.Duplex (RouteDuplex', root)
+import Routing.Duplex (RouteDuplex, root)
 import Routing.Duplex.Generic (noArgs)
 import RoutingDuplexMiddleware (UnmatchedHandler(..))
 import RoutingDuplexMiddleware as RoutingMiddleware
@@ -52,7 +51,7 @@ import Stetson.Types (AcceptHandler, Authorized(..), CowboyHandler(..), HandlerA
 import Unsafe.Coerce (unsafeCoerce)
 
 -- | Creates a blank stetson config with default settings and no routes
-configure :: StetsonConfig NoArguments
+configure :: StetsonConfig NoArguments NoArguments
 configure =
   { bindPort: 8000
   , bindAddress: tuple4 0 0 0 0
@@ -76,10 +75,10 @@ configure =
   mod s = NativeModuleName (atom s)
 
 routes ::
-  forall a b rep r.
+  forall t' a' t a rep r.
   Generic a rep =>
   GDispatch rep r =>
-  RouteDuplex' a -> { | r } -> StetsonConfig b -> StetsonConfig a
+  RouteDuplex t a -> { | r } -> StetsonConfig t' a' -> StetsonConfig t a
 routes routing d config = config { routes = { routing: routing, dispatch: dispatchTable d } }
   where
   dispatchTable ::
@@ -87,10 +86,10 @@ routes routing d config = config { routes = { routing: routing, dispatch: dispat
   dispatchTable r a = gDispatch r (from a)
 
 routes2 ::
-  forall a rep r.
+  forall t a rep r.
   Generic a rep =>
   GDispatch rep r =>
-  RouteDuplex' a -> { | r } -> RouteConfig a
+  RouteDuplex t a -> { | r } -> RouteConfig t a
 routes2 routing d = { routing: routing, dispatch: dispatchTable d }
   where
   dispatchTable ::
@@ -98,62 +97,73 @@ routes2 routing d = { routing: routing, dispatch: dispatchTable d }
   dispatchTable r a = gDispatch r (from a)
 
 -- | Introduce a list of native Erlang cowboy handlers to this config
-cowboyRoutes :: forall a. List Path -> StetsonConfig a -> StetsonConfig a
+cowboyRoutes :: forall t a. List Path -> StetsonConfig t a -> StetsonConfig t a
 cowboyRoutes newRoutes config@{ cowboyRoutes: existingRoutes } = (config { cowboyRoutes = reverse newRoutes <> existingRoutes })
 
 -- | Set the port that this http listener will listen to
-port :: forall a. Int -> StetsonConfig a -> StetsonConfig a
+port :: forall t a. Int -> StetsonConfig t a -> StetsonConfig t a
 port value config = (config { bindPort = value })
 
 -- | Set the IP that this http listener will bind to (default: 0.0.0.0)
-bindTo :: forall a. Int -> Int -> Int -> Int -> StetsonConfig a -> StetsonConfig a
+bindTo :: forall t a. Int -> Int -> Int -> Int -> StetsonConfig t a -> StetsonConfig t a
 bindTo t1 t2 t3 t4 config = (config { bindAddress = tuple4 t1 t2 t3 t4 })
 
 -- | Supply a list of modules to act as native stream handlers in cowboy
-streamHandlers :: forall a. List NativeModuleName -> StetsonConfig a -> StetsonConfig a
+streamHandlers :: forall t a. List NativeModuleName -> StetsonConfig t a -> StetsonConfig t a
 streamHandlers handlers config = (config { streamHandlers = Just handlers })
 
 -- | Supply a list of modules to act as native middlewares in cowboy
-middlewares :: forall a. List NativeModuleName -> StetsonConfig a -> StetsonConfig a
+middlewares :: forall t a. List NativeModuleName -> StetsonConfig t a -> StetsonConfig t a
 middlewares mws config = (config { middlewares = Just mws })
 
 -- | Supply tcp transport options for cowboy/ranch
-tcpOptions :: forall a. Record Tcp.ListenOptions -> StetsonConfig a -> StetsonConfig a
+tcpOptions :: forall t a. Record Tcp.ListenOptions -> StetsonConfig t a -> StetsonConfig t a
 tcpOptions opts config = config { tcpOptions = Just opts }
 
 -- | Supply tls/ssl transport options for cowboy/ranch
-tlsOptions :: forall a. Record Ssl.ListenOptions -> StetsonConfig a -> StetsonConfig a
+tlsOptions :: forall t a. Record Ssl.ListenOptions -> StetsonConfig t a -> StetsonConfig t a
 tlsOptions opts config = config { tlsOptions = Just opts }
 
 -- | Start the listener with the specified name
-startClear :: forall a. String -> StetsonConfig a -> Effect (Either Foreign Unit)
+startClear :: forall t a. String -> StetsonConfig t a -> Effect (Either Foreign Unit)
 startClear name config@{ bindAddress, bindPort, tcpOptions: tcpOptions_ } = do
-  let listenOpts = fromMaybe (Tcp.listenOptions {}) tcpOptions_
-      opts = Cowboy.defaultOptions { socket_opts = Just $ listenOpts 
-          { port = listenOpts.port <|> Just bindPort
-          , ip = listenOpts.ip <|> (Just $ IpAddress $ Ip4 bindAddress)
-          }
+  let
+    listenOpts = fromMaybe (Tcp.listenOptions {}) tcpOptions_
+    opts =
+      Cowboy.defaultOptions
+        { socket_opts =
+          Just
+            $ listenOpts
+                { port = listenOpts.port <|> Just bindPort
+                , ip = listenOpts.ip <|> (Just $ IpAddress $ Ip4 bindAddress)
+                }
         }
-
   Cowboy.startClear (atom name) opts (protoOpts config)
 
 -- | Start the TLS listener with the specified name
-startTls :: forall a. String -> StetsonConfig a -> Effect (Either Foreign Unit)
+startTls :: forall t a. String -> StetsonConfig t a -> Effect (Either Foreign Unit)
 startTls name config@{ bindAddress, bindPort, tlsOptions: tlsOptions_ } = do
-  let listenOpts = fromMaybe Ssl.defaultListenOptions tlsOptions_
-      opts = Cowboy.defaultOptions { socket_opts = Just $ listenOpts 
-          { port = listenOpts.port <|> Just bindPort
-          , ip = listenOpts.ip <|> (Just $ IpAddress $ Ip4 bindAddress)
-          }
+  let
+    listenOpts = fromMaybe Ssl.defaultListenOptions tlsOptions_
+    opts =
+      Cowboy.defaultOptions
+        { socket_opts =
+          Just
+            $ listenOpts
+                { port = listenOpts.port <|> Just bindPort
+                , ip = listenOpts.ip <|> (Just $ IpAddress $ Ip4 bindAddress)
+                }
         }
-
   Cowboy.startTls (atom name) opts (protoOpts config)
 
-protoOpts :: forall a. StetsonConfig a -> ProtocolOpts
+protoOpts :: forall t a. StetsonConfig t a -> ProtocolOpts
 protoOpts config@{ streamHandlers: streamHandlers_, middlewares: middlewares_, cowboyRoutes: cowboyRoutes' } =
-  { env: Just ( Map.empty # Cowboy.dispatch dispatch
-                          # RoutingMiddleware.routes config.routes.routing { dispatch: mapping, unmatched }
-              )
+  { env:
+      Just
+        ( Map.empty
+            # Cowboy.dispatch dispatch
+            # RoutingMiddleware.routes config.routes.routing { dispatch: mapping, unmatched }
+        )
   , streamHandlers: streamHandlers_
   , middlewares: middlewares_
   }

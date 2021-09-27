@@ -62,7 +62,7 @@ import Control.Monad.State (class MonadState)
 import Control.Monad (class Monad)
 import Effect.Class (class MonadEffect)
 import Prim.Row (class Union)
-import Routing.Duplex (RouteDuplex')
+import Routing.Duplex (RouteDuplex)
 import Stetson.Utils (unsafeMergeOptional)
 
 foreign import data HandlerArgs :: Type
@@ -251,14 +251,14 @@ data RouteHandler
   | StaticRoute (Array String) StaticAssetLocation
   | CowboyRouteFallthrough
 
-type RouteConfig a
-  = { routing :: RouteDuplex' a
+type RouteConfig t a
+  = { routing :: RouteDuplex t a
     , dispatch :: a -> RouteHandler
     }
 
 -- Probably want to make this look a bit more like Cowboy's config internally
 -- Lists of maps or tuples or whatever the hell cowboy is using in whatever version we're bound to
-type StetsonConfig a
+type StetsonConfig t a
   = { bindPort :: Int
     , bindAddress :: Tuple4 Int Int Int Int
     , streamHandlers :: Maybe (List NativeModuleName)
@@ -266,7 +266,7 @@ type StetsonConfig a
     , tcpOptions :: Maybe (Record Tcp.ListenOptions)
     , tlsOptions :: Maybe (Record Ssl.ListenOptions)
     , cowboyRoutes :: List Routes.Path
-    , routes :: RouteConfig a
+    , routes :: RouteConfig t a
     }
 
 emptyHandler :: forall msg state. InitHandler state -> StetsonHandler msg state
