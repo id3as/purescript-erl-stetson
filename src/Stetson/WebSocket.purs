@@ -14,8 +14,6 @@ import Foreign (Foreign)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Erl.Cowboy.Req (Req)
-import Erl.Process (Process)
-import Control.Monad.State as State
 import Effect.Class (liftEffect) as EffectExports
 import Erl.Process (self) as ProcessExports
 

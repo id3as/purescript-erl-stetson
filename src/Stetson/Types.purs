@@ -39,7 +39,7 @@ module Stetson.Types
   ) where
 
 import Prelude
-import Control.Monad.Reader (ReaderT, runReaderT)
+import Control.Monad.Reader (ReaderT)
 import Control.Monad.Reader as Reader
 import Control.Monad.Reader.Class (class MonadAsk)
 import Data.Exists (mkExists, runExists, Exists)
@@ -57,9 +57,6 @@ import Erl.ModuleName (NativeModuleName)
 import Erl.Process (Process, class HasSelf, class ReceivesMessage)
 import Erl.Ssl as Ssl
 import Foreign (Foreign)
-import Control.Monad.State as State
-import Control.Monad.State (class MonadState)
-import Control.Monad (class Monad)
 import Effect.Class (class MonadEffect)
 import Prim.Row (class Union)
 import Routing.Duplex (RouteDuplex)

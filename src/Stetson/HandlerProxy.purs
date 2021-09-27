@@ -1,7 +1,7 @@
 module Stetson.HandlerProxy where
 
 import Prelude
-import Control.Monad.Reader (ReaderT, runReaderT)
+import Control.Monad.Reader (runReaderT)
 import Data.FunctorWithIndex (mapWithIndex)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
@@ -17,7 +17,6 @@ import Erl.Data.List (List, nil, (!!))
 import Erl.Data.Tuple (tuple2, uncurry2)
 import Erl.ModuleName (NativeModuleName(..))
 import Erl.Process (Process)
-import Erl.Process.Raw (Pid, send)
 import Foreign (Foreign)
 import Stetson (WebSocketCallResult(..))
 import Stetson.Types (Authorized(..), CowboyHandler(..), InitResult(..), LoopCallResult(..), RestResult(..), StetsonHandlerCallbacks, unwrapResult)

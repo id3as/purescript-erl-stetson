@@ -176,11 +176,15 @@ let overrides =
         , repo = "https://github.com/id3as/purescript-erl-ranch.git"
         , version = "08a76bd850ba00c3a120c1d149bed07f9fcc165d"
         }
-    , erl-process =
-             upstream.erl-process
-         //  { repo = "https://github.com/id3as/purescript-erl-process.git"
-             , version = "17faeefd023520a18e37e4e527fa9ef54fdf8cd1"
-             }
+      , erl-process =
+        { repo = "https://github.com/id3as/purescript-erl-process.git"
+        , dependencies =
+          [ "console"
+          , "prelude"
+          , "effect"
+          ]
+        , version = "afbfa4e7a13c0d55609ff144d49982563fada7f5"
+        }
       , erl-otp-types =
         { dependencies =
           [ "erl-atom"
