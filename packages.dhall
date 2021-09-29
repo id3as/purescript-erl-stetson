@@ -129,28 +129,104 @@ let overrides =
         , version = "423f1af8437670beab03463b3e9bc0a487f05ba4"
         }
       , erl-cowboy =
-        { repo = "https://github.com/id3as/purescript-erl-cowboy.git"
+        { repo = "https://github.com/purerl/purescript-erl-cowboy.git"
         , dependencies =
           [ "console"
           , "effect"
+          , "either"
+          , "erl-atom"
+          , "erl-binary"
+          , "erl-kernel"
+          , "erl-lists"
+          , "erl-maps"
+          , "erl-modules"
+          , "erl-ranch"
+          , "erl-tuples"
+          , "foreign"
+          , "functions"
+          , "maybe"
+          , "prelude"
+          , "transformers"
+          , "tuples"
+          , "unsafe-coerce"
+          ]
+        , version = "ca4dd4a6432817fbe6ef9ab1814046f6827046cd"
+        }
+      , erl-ranch =
+        { dependencies =
+          [ "convertable-options"
+          , "effect"
+          , "either"
+          , "erl-atom"
+          , "erl-kernel"
+          , "erl-lists"
+          , "erl-maps"
+          , "erl-otp-types"
+          , "erl-process"
+          , "erl-ssl"
+          , "erl-tuples"
+          , "exceptions"
+          , "foreign"
+          , "maybe"
+          , "prelude"
+          , "record"
+          , "typelevel-prelude"
+          , "unsafe-coerce"
+          ]
+        , repo = "https://github.com/id3as/purescript-erl-ranch.git"
+        , version = "08a76bd850ba00c3a120c1d149bed07f9fcc165d"
+        }
+      , erl-process =
+        { repo = "https://github.com/id3as/purescript-erl-process.git"
+        , dependencies =
+          [ "console"
+          , "prelude"
+          , "effect"
+          ]
+        , version = "afbfa4e7a13c0d55609ff144d49982563fada7f5"
+        }
+      , erl-otp-types =
+        { dependencies =
+          [ "erl-atom"
+          , "erl-binary"
+          , "erl-kernel"
+          , "foreign"
+          , "prelude"
+          , "unsafe-reference"
+          ]
+        , repo = "https://github.com/id3as/purescript-erl-otp-types.git"
+        , version = "6470bc379447c406456e8ef1e6a79c80e3c5e8d1"
+        }      
+    , erl-ssl =
+        { dependencies =
+          [ "convertable-options"
+          , "datetime"
+          , "effect"
+          , "either"
+          , "maybe"
           , "erl-atom"
           , "erl-binary"
           , "erl-lists"
-          , "erl-maps"
-          , "erl-tuples"
-          , "erl-modules"
           , "erl-kernel"
+          , "erl-tuples"
+          , "erl-logger"
+          , "erl-otp-types"
           , "foreign"
+          , "maybe"
+          , "partial"
+          , "prelude"
+          , "record"
+          , "unsafe-reference"
           ]
-        , version = "a4963bbd6f3e87e637d088f0d16097405c0f2a3b"
+        , repo = "https://github.com/id3as/purescript-erl-ssl.git"
+        , version = "2bd94ce343448406e579425e1b4140a6b6dd7de0"
         }
-    , erl-process =
-             upstream.erl-process
-         //  { repo = "https://github.com/id3as/purescript-erl-process.git"
-             , version = "17faeefd023520a18e37e4e527fa9ef54fdf8cd1"
-             }
+        , unsafe-reference =
+        { repo = "https://github.com/purerl/purescript-unsafe-reference.git"
+        , dependencies = [ "prelude"  ]
+        , version = "464ee74d0c3ef50e7b661c13399697431f4b6251"
+        }
       }
-      
 
 let additions = {
  erl-pinto =

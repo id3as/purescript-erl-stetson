@@ -9,14 +9,12 @@ module Stetson.Loop
   ) where
 
 import Prelude
-import Control.Monad.State as State
 import Effect.Class (liftEffect) as EffectExports
 import Erl.Process (self) as ProcessExports
 
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Erl.Cowboy.Req (Req)
-import Erl.Process (Process)
 import Foreign (Foreign)
 import Stetson.Types (InitHandler, InitResult(..), LoopInfoHandler, LoopInitHandler, StetsonHandler(..), emptyHandler)
 

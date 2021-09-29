@@ -1,7 +1,6 @@
 module RoutingDuplexMiddleware (ModuleInfo, routes, execute, ExecuteResult, UnmatchedHandler(..), Config) where
 
 import Prelude
-
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
@@ -16,7 +15,7 @@ import Erl.Data.Tuple (Tuple2, tuple2, tuple3, uncurry2)
 import Erl.ModuleName (NativeModuleName)
 import Foreign (Foreign, unsafeFromForeign, unsafeToForeign)
 import Foreign as Foreign
-import Routing.Duplex (RouteDuplex', parse)
+import Routing.Duplex (RouteDuplex, parse)
 import Routing.Duplex.Parser (RouteError)
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -36,11 +35,11 @@ type Config a
 type ModuleInfo
   = { mod :: NativeModuleName, args :: Foreign }
 
-routes :: forall a. RouteDuplex' a -> Config a -> Env -> Env
+routes :: forall t a. RouteDuplex t a -> Config a -> Env -> Env
 routes r config env = Map.insert routesKey (Foreign.unsafeToForeign (Routes r config)) env
 
-data Routes a
-  = Routes (RouteDuplex' a) (Config a)
+data Routes t a
+  = Routes (RouteDuplex t a) (Config a)
 
 foreign import cowboyRouterExecute :: Req -> Env -> Effect ExecuteResult
 
