@@ -1,0 +1,10 @@
+{application, stetson,
+ [ {description, "Opinionated Cowboy wrapper"}
+ , {vsn, "stetson"}
+ , {registered, []}
+ , {modules, []}
+ , {applications, [ kernel
+                  , stdlib
+                  ]}
+  , {env, []}
+ ]}.

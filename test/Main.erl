@@ -1,4 +1,4 @@
--module(stetson_test_main@foreign).
+-module(test_main@foreign).
 -export([startup/0]).
 
 startup() -> fun() ->
