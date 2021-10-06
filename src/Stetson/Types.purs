@@ -39,25 +39,27 @@ module Stetson.Types
   ) where
 
 import Prelude
+
 import Control.Monad.Reader (ReaderT)
 import Control.Monad.Reader as Reader
 import Control.Monad.Reader.Class (class MonadAsk)
 import Data.Exists (mkExists, runExists, Exists)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
+import Effect.Class (class MonadEffect)
 import Erl.Cowboy.Handlers.Rest (MovedResult)
 import Erl.Cowboy.Handlers.WebSocket (Frame)
 import Erl.Cowboy.Req (Req)
 import Erl.Cowboy.Routes as Routes
 import Erl.Data.Binary.IOData (IOData)
 import Erl.Data.List (List)
-import Erl.Data.Tuple (Tuple2, Tuple4)
+import Erl.Data.Tuple (Tuple2)
+import Erl.Kernel.Inet (Ip4Address)
 import Erl.Kernel.Tcp as Tcp
 import Erl.ModuleName (NativeModuleName)
 import Erl.Process (Process, class HasSelf, class ReceivesMessage)
 import Erl.Ssl as Ssl
 import Foreign (Foreign)
-import Effect.Class (class MonadEffect)
 import Prim.Row (class Union)
 import Routing.Duplex (RouteDuplex)
 import Stetson.Utils (unsafeMergeOptional)
@@ -257,7 +259,7 @@ type RouteConfig t a
 -- Lists of maps or tuples or whatever the hell cowboy is using in whatever version we're bound to
 type StetsonConfig t a
   = { bindPort :: Int
-    , bindAddress :: Tuple4 Int Int Int Int
+    , bindAddress :: Ip4Address
     , streamHandlers :: Maybe (List NativeModuleName)
     , middlewares :: Maybe (List NativeModuleName)
     , tcpOptions :: Maybe (Record Tcp.ListenOptions)

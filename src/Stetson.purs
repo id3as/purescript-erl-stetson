@@ -55,7 +55,7 @@ import Unsafe.Coerce (unsafeCoerce)
 configure :: StetsonConfig NoArguments NoArguments
 configure =
   { bindPort: 8000
-  , bindAddress: tuple4 0 0 0 0
+  , bindAddress: Ip4Address $ tuple4 0 0 0 0
   , streamHandlers: Nothing
   , middlewares:
       Just
@@ -107,7 +107,7 @@ port value config = (config { bindPort = value })
 
 -- | Set the IP that this http listener will bind to (default: 0.0.0.0)
 bindTo :: forall t a. Int -> Int -> Int -> Int -> StetsonConfig t a -> StetsonConfig t a
-bindTo t1 t2 t3 t4 config = (config { bindAddress = tuple4 t1 t2 t3 t4 })
+bindTo t1 t2 t3 t4 config = (config { bindAddress = Ip4Address (tuple4 t1 t2 t3 t4) })
 
 -- | Supply a list of modules to act as native stream handlers in cowboy
 streamHandlers :: forall t a. List NativeModuleName -> StetsonConfig t a -> StetsonConfig t a
@@ -136,7 +136,7 @@ startClear name config@{ bindAddress, bindPort, tcpOptions: tcpOptions_ } = do
           Just
             $ listenOpts
                 { port = listenOpts.port <|> Just bindPort
-                , ip = listenOpts.ip <|> (Just $ IpAddress $ Ip4 $ Ip4Address bindAddress)
+                , ip = listenOpts.ip <|> (Just $ IpAddress $ Ip4 bindAddress)
                 }
         }
   Cowboy.startClear (atom name) opts (protoOpts config)
@@ -152,7 +152,7 @@ startTls name config@{ bindAddress, bindPort, tlsOptions: tlsOptions_ } = do
           Just
             $ listenOpts
                 { port = listenOpts.port <|> Just bindPort
-                , ip = listenOpts.ip <|> (Just $ IpAddress $ Ip4 $ Ip4Address bindAddress)
+                , ip = listenOpts.ip <|> (Just $ IpAddress $ Ip4 bindAddress)
                 }
         }
   Cowboy.startTls (atom name) opts (protoOpts config)
