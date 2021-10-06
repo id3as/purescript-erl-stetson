@@ -30,7 +30,7 @@ in upstream
           , "tuples"
           , "unsafe-coerce"
           ]
-        , version = "ca4dd4a6432817fbe6ef9ab1814046f6827046cd"
+        , version = "f1e3c71405f6b6d2f38086eb7ece8e197f5f8bd2"
         }
   with erl-ranch =
         { dependencies =
@@ -54,7 +54,7 @@ in upstream
           , "unsafe-coerce"
           ]
         , repo = "https://github.com/id3as/purescript-erl-ranch.git"
-        , version = "08a76bd850ba00c3a120c1d149bed07f9fcc165d"
+        , version = "b9f86fbc47247110a44b23c22606f044a5222658"
         }
   with erl-process =
         { repo = "https://github.com/id3as/purescript-erl-process.git"
@@ -143,7 +143,7 @@ in upstream
           , "unsafe-coerce"
           ]
         , repo = "https://github.com/id3as/purescript-erl-kernel.git"
-        , version = "2c1f78a3aa6993e91e342a984c522b87b98bbb2b"
+        , version = "75765b66c93825afc226282450be43fca8997b2f"
         }
   with convertable-options =
         { repo = "https://github.com/natefaubion/purescript-convertable-options"
