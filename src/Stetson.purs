@@ -18,6 +18,7 @@ module Stetson
   ) where
 
 import Prelude
+
 import Control.Alt ((<|>))
 import Cowboy.Static as CowboyStatic
 import Data.Either (Either(..))
@@ -35,7 +36,7 @@ import Erl.Data.List as List
 import Erl.Data.Map (Map)
 import Erl.Data.Map as Map
 import Erl.Data.Tuple (tuple2, tuple3, tuple4)
-import Erl.Kernel.Inet (IpAddress(..), SocketAddress(..))
+import Erl.Kernel.Inet (Ip4Address(..), IpAddress(..), SocketAddress(..))
 import Erl.Kernel.Tcp as Tcp
 import Erl.ModuleName (NativeModuleName(..), nativeModuleName)
 import Erl.Ssl as Ssl
@@ -135,7 +136,7 @@ startClear name config@{ bindAddress, bindPort, tcpOptions: tcpOptions_ } = do
           Just
             $ listenOpts
                 { port = listenOpts.port <|> Just bindPort
-                , ip = listenOpts.ip <|> (Just $ IpAddress $ Ip4 bindAddress)
+                , ip = listenOpts.ip <|> (Just $ IpAddress $ Ip4 $ Ip4Address bindAddress)
                 }
         }
   Cowboy.startClear (atom name) opts (protoOpts config)
@@ -151,7 +152,7 @@ startTls name config@{ bindAddress, bindPort, tlsOptions: tlsOptions_ } = do
           Just
             $ listenOpts
                 { port = listenOpts.port <|> Just bindPort
-                , ip = listenOpts.ip <|> (Just $ IpAddress $ Ip4 bindAddress)
+                , ip = listenOpts.ip <|> (Just $ IpAddress $ Ip4 $ Ip4Address bindAddress)
                 }
         }
   Cowboy.startTls (atom name) opts (protoOpts config)
