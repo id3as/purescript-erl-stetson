@@ -54,7 +54,7 @@ in upstream
           , "unsafe-coerce"
           ]
         , repo = "https://github.com/id3as/purescript-erl-ranch.git"
-        , version = "b9f86fbc47247110a44b23c22606f044a5222658"
+        , version = "7a834e8122193bbea4d5c399786c0308b0d99537"
         }
   with erl-process =
         { repo = "https://github.com/id3as/purescript-erl-process.git"
@@ -99,7 +99,7 @@ in upstream
           , "unsafe-reference"
           ]
         , repo = "https://github.com/id3as/purescript-erl-ssl.git"
-        , version = "2bd94ce343448406e579425e1b4140a6b6dd7de0"
+        , version = "9d8a9d0fb0e50d72fbae2f733c5a638ece2055ea"
         }
   with unsafe-reference =
         { repo = "https://github.com/purerl/purescript-unsafe-reference.git"
@@ -143,7 +143,7 @@ in upstream
           , "unsafe-coerce"
           ]
         , repo = "https://github.com/id3as/purescript-erl-kernel.git"
-        , version = "75765b66c93825afc226282450be43fca8997b2f"
+        , version = "8969ab236178c3c861cf90fd55c537caa2584a9e"
         }
   with convertable-options =
         { repo = "https://github.com/natefaubion/purescript-convertable-options"
@@ -165,5 +165,5 @@ in upstream
           , "unsafe-coerce"
           ]
         , repo = "https://github.com/id3as/purescript-erl-untagged-union.git"
-        , version = "eb7a10c7930c4b99f1a6bfce767daa814d45dd2b"
+        , version = "e6f009904aa8d14a5417d33ba8533d7d45416cb1"
         }

@@ -54,7 +54,7 @@ import Erl.Cowboy.Routes as Routes
 import Erl.Data.Binary.IOData (IOData)
 import Erl.Data.List (List)
 import Erl.Data.Tuple (Tuple2)
-import Erl.Kernel.Inet (Ip4Address)
+import Erl.Kernel.Inet (Ip4Address, Port)
 import Erl.Kernel.Tcp as Tcp
 import Erl.ModuleName (NativeModuleName)
 import Erl.Process (Process, class HasSelf, class ReceivesMessage)
@@ -258,7 +258,7 @@ type RouteConfig t a
 -- Probably want to make this look a bit more like Cowboy's config internally
 -- Lists of maps or tuples or whatever the hell cowboy is using in whatever version we're bound to
 type StetsonConfig t a
-  = { bindPort :: Int
+  = { bindPort :: Port
     , bindAddress :: Ip4Address
     , streamHandlers :: Maybe (List NativeModuleName)
     , middlewares :: Maybe (List NativeModuleName)

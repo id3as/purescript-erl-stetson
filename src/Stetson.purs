@@ -36,7 +36,7 @@ import Erl.Data.List as List
 import Erl.Data.Map (Map)
 import Erl.Data.Map as Map
 import Erl.Data.Tuple (tuple2, tuple3, tuple4)
-import Erl.Kernel.Inet (Ip4Address(..), IpAddress(..), SocketAddress(..))
+import Erl.Kernel.Inet (Ip4Address(..), IpAddress(..), Octet(..), Port(..), SocketAddress(..))
 import Erl.Kernel.Tcp as Tcp
 import Erl.ModuleName (NativeModuleName(..), nativeModuleName)
 import Erl.Ssl as Ssl
@@ -54,8 +54,8 @@ import Unsafe.Coerce (unsafeCoerce)
 -- | Creates a blank stetson config with default settings and no routes
 configure :: StetsonConfig NoArguments NoArguments
 configure =
-  { bindPort: 8000
-  , bindAddress: Ip4Address $ tuple4 0 0 0 0
+  { bindPort: (Port 8000)
+  , bindAddress: Ip4Address $ tuple4 (Octet 0) (Octet 0) (Octet 0) (Octet 0)
   , streamHandlers: Nothing
   , middlewares:
       Just
@@ -102,11 +102,11 @@ cowboyRoutes :: forall t a. List Path -> StetsonConfig t a -> StetsonConfig t a
 cowboyRoutes newRoutes config@{ cowboyRoutes: existingRoutes } = (config { cowboyRoutes = reverse newRoutes <> existingRoutes })
 
 -- | Set the port that this http listener will listen to
-port :: forall t a. Int -> StetsonConfig t a -> StetsonConfig t a
+port :: forall t a. Port -> StetsonConfig t a -> StetsonConfig t a
 port value config = (config { bindPort = value })
 
 -- | Set the IP that this http listener will bind to (default: 0.0.0.0)
-bindTo :: forall t a. Int -> Int -> Int -> Int -> StetsonConfig t a -> StetsonConfig t a
+bindTo :: forall t a. Octet -> Octet -> Octet -> Octet -> StetsonConfig t a -> StetsonConfig t a
 bindTo t1 t2 t3 t4 config = (config { bindAddress = Ip4Address (tuple4 t1 t2 t3 t4) })
 
 -- | Supply a list of modules to act as native stream handlers in cowboy

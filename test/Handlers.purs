@@ -1,6 +1,7 @@
 module Stetson.Test.Handlers where
 
 import Prelude
+
 import Data.Either (Either(..), either)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
@@ -13,6 +14,7 @@ import Erl.Data.Binary (Binary)
 import Erl.Data.Binary.IOData (IOData, fromBinary, toBinary, fromString)
 import Erl.Data.List (List, (:), nil)
 import Erl.Data.Tuple (Tuple2, tuple2, tuple3)
+import Erl.Kernel.Inet (Octet(..), Port(..))
 import Erl.ModuleName (NativeModuleName(..))
 import Foreign (unsafeToForeign)
 import Pinto (RegistryName(..), StartLinkResult)
@@ -82,7 +84,7 @@ testStetsonConfig = do
     $ Stetson.startClear "http_listener"
     $ Stetson.configure
         { routes = Stetson.routes2 TestRoutes.apiRoute routes
-        , bindPort = 3001
+        , bindPort = Port 3001
         }
   pure $ GS.InitOk $ State {}
 
@@ -93,8 +95,8 @@ testStetsonConfig2 = do
     $ liftEffect
     $ Stetson.configure
     # Stetson.routes TestRoutes.apiRoute routes
-    # Stetson.port 3000
-    # Stetson.bindTo 0 0 0 0
+    # Stetson.port (Port 3000)
+    # Stetson.bindTo (Octet 0) (Octet 0) (Octet 0) (Octet 0)
     # Stetson.cowboyRoutes cowboyRoutes
     # Stetson.startClear "http_listener2"
   pure $ GS.InitOk $ State {}
@@ -110,7 +112,7 @@ testStetsonConfigNested = do
             { "One": routes
             , "Two": routes
             }
-        , bindPort = 3002
+        , bindPort = Port 3002
         }
   pure $ GS.InitOk $ State {}
 
