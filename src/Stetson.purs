@@ -35,8 +35,8 @@ import Erl.Data.List (List, nil, null, reverse, singleton, (:))
 import Erl.Data.List as List
 import Erl.Data.Map (Map)
 import Erl.Data.Map as Map
-import Erl.Data.Tuple (tuple2, tuple3, tuple4)
-import Erl.Kernel.Inet (Ip4Address(..), IpAddress(..), Octet(..), Port(..), SocketAddress(..))
+import Erl.Data.Tuple (tuple2, tuple3)
+import Erl.Kernel.Inet (Ip4Address, IpAddress(..), Port(..), SocketAddress(..), ip4Any)
 import Erl.Kernel.Tcp as Tcp
 import Erl.ModuleName (NativeModuleName(..), nativeModuleName)
 import Erl.Ssl as Ssl
@@ -55,7 +55,7 @@ import Unsafe.Coerce (unsafeCoerce)
 configure :: StetsonConfig NoArguments NoArguments
 configure =
   { bindPort: (Port 8000)
-  , bindAddress: Ip4Address $ tuple4 (Octet 0) (Octet 0) (Octet 0) (Octet 0)
+  , bindAddress: ip4Any
   , streamHandlers: Nothing
   , middlewares:
       Just
@@ -106,8 +106,8 @@ port :: forall t a. Port -> StetsonConfig t a -> StetsonConfig t a
 port value config = (config { bindPort = value })
 
 -- | Set the IP that this http listener will bind to (default: 0.0.0.0)
-bindTo :: forall t a. Octet -> Octet -> Octet -> Octet -> StetsonConfig t a -> StetsonConfig t a
-bindTo t1 t2 t3 t4 config = (config { bindAddress = Ip4Address (tuple4 t1 t2 t3 t4) })
+bindTo :: forall t a. Ip4Address -> StetsonConfig t a -> StetsonConfig t a
+bindTo ip4Address config = (config { bindAddress = ip4Address })
 
 -- | Supply a list of modules to act as native stream handlers in cowboy
 streamHandlers :: forall t a. List NativeModuleName -> StetsonConfig t a -> StetsonConfig t a

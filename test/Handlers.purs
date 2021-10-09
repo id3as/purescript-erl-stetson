@@ -14,7 +14,7 @@ import Erl.Data.Binary (Binary)
 import Erl.Data.Binary.IOData (IOData, fromBinary, toBinary, fromString)
 import Erl.Data.List (List, (:), nil)
 import Erl.Data.Tuple (Tuple2, tuple2, tuple3)
-import Erl.Kernel.Inet (Octet(..), Port(..))
+import Erl.Kernel.Inet (Port(..), ip4Any)
 import Erl.ModuleName (NativeModuleName(..))
 import Foreign (unsafeToForeign)
 import Pinto (RegistryName(..), StartLinkResult)
@@ -96,7 +96,7 @@ testStetsonConfig2 = do
     $ Stetson.configure
     # Stetson.routes TestRoutes.apiRoute routes
     # Stetson.port (Port 3000)
-    # Stetson.bindTo (Octet 0) (Octet 0) (Octet 0) (Octet 0)
+    # Stetson.bindTo ip4Any
     # Stetson.cowboyRoutes cowboyRoutes
     # Stetson.startClear "http_listener2"
   pure $ GS.InitOk $ State {}

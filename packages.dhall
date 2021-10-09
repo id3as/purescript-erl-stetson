@@ -6,7 +6,7 @@ in upstream
   with erl-binary =
         { dependencies = [ "prelude", "erl-lists" ]
         , repo = "https://github.com/id3as/purescript-erl-binary.git"
-        , version = "423f1af8437670beab03463b3e9bc0a487f05ba4"
+        , version = "e3a5da78a9264a800eb7bad918a58de5ac57ba4c"
         }
   with erl-cowboy =
         { repo = "https://github.com/purerl/purescript-erl-cowboy.git"
@@ -63,7 +63,7 @@ in upstream
           , "prelude"
           , "effect"
           ]
-        , version = "afbfa4e7a13c0d55609ff144d49982563fada7f5"
+        , version = "b09d6b287d13f67f4ed323cc28478d5ca4691dc4"
         }
   with erl-otp-types =
         { dependencies =
@@ -75,7 +75,7 @@ in upstream
           , "unsafe-reference"
           ]
         , repo = "https://github.com/id3as/purescript-erl-otp-types.git"
-        , version = "6470bc379447c406456e8ef1e6a79c80e3c5e8d1"
+        , version = "2ff85e38ea1f5a4cf91142b0e680985afc2be666"
         }      
   with erl-ssl =
         { dependencies =
@@ -143,7 +143,7 @@ in upstream
           , "unsafe-coerce"
           ]
         , repo = "https://github.com/id3as/purescript-erl-kernel.git"
-        , version = "8969ab236178c3c861cf90fd55c537caa2584a9e"
+        , version = "4ed7bd701686d681b6187cbc8276ae7a4e382e6f"
         }
   with convertable-options =
         { repo = "https://github.com/natefaubion/purescript-convertable-options"
@@ -165,5 +165,5 @@ in upstream
           , "unsafe-coerce"
           ]
         , repo = "https://github.com/id3as/purescript-erl-untagged-union.git"
-        , version = "e6f009904aa8d14a5417d33ba8533d7d45416cb1"
+        , version = "57f8aad9d2bd0a980dbd6ab3136f8d1edd16a1ad"
         }
