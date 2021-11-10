@@ -19,7 +19,7 @@ import Erl.ModuleName (NativeModuleName(..))
 import Erl.Process (Process)
 import Foreign (Foreign)
 import Stetson (WebSocketCallResult(..))
-import Stetson.Types (Authorized(..), CowboyHandler(..), InitResult(..), LoopCallResult(..), RestResult(..), StetsonHandlerCallbacks, unwrapResult)
+import Stetson.Types (Authorized(..), CowboyHandler(..), InitResult(..), LoopCallResult(..), AcceptHandlerResult, RestResult(..), StetsonHandlerCallbacks, unwrapResult)
 import Unsafe.Coerce (unsafeCoerce)
 
 foreign import self :: forall msg. Effect (Process msg)
@@ -35,7 +35,7 @@ foreign import loopInitResult :: forall msg state. State msg state -> Req -> Eli
 type State msg state
   = { handler :: StetsonHandlerCallbacks msg state
     , innerState :: state
-    , acceptHandlers :: List (Req -> state -> Effect (RestResult Boolean state))
+    , acceptHandlers :: List (Req -> state -> Effect (RestResult AcceptHandlerResult state))
     , provideHandlers :: List (Req -> state -> Effect (RestResult IOData state))
     }
 
@@ -199,7 +199,7 @@ restResult _ Nothing = noCall
 noCall :: forall t3 t4. Applicative t3 => t3 t4
 noCall = pure $ unsafeCoerce (atom "no_call")
 
-accept :: forall msg state. Int -> EffectFn2 Req (State msg state) (Cowboy.RestResult Boolean (State msg state))
+accept :: forall msg state. Int -> EffectFn2 Req (State msg state) (Cowboy.RestResult AcceptHandlerResult (State msg state))
 accept i =
   mkEffectFn2 \req state@{ acceptHandlers } ->
     call (acceptHandlers !! i) req state
@@ -209,25 +209,25 @@ provide i =
   mkEffectFn2 \req state@{ provideHandlers } ->
     call (provideHandlers !! i) req state
 
-accept_0 :: forall msg state. EffectFn2 Req (State msg state) (Cowboy.RestResult Boolean (State msg state))
+accept_0 :: forall msg state. EffectFn2 Req (State msg state) (Cowboy.RestResult AcceptHandlerResult (State msg state))
 accept_0 = accept 0
 
-accept_1 :: forall msg state. EffectFn2 Req (State msg state) (Cowboy.RestResult Boolean (State msg state))
+accept_1 :: forall msg state. EffectFn2 Req (State msg state) (Cowboy.RestResult AcceptHandlerResult (State msg state))
 accept_1 = accept 1
 
-accept_2 :: forall msg state. EffectFn2 Req (State msg state) (Cowboy.RestResult Boolean (State msg state))
+accept_2 :: forall msg state. EffectFn2 Req (State msg state) (Cowboy.RestResult AcceptHandlerResult (State msg state))
 accept_2 = accept 2
 
-accept_3 :: forall msg state. EffectFn2 Req (State msg state) (Cowboy.RestResult Boolean (State msg state))
+accept_3 :: forall msg state. EffectFn2 Req (State msg state) (Cowboy.RestResult AcceptHandlerResult (State msg state))
 accept_3 = accept 3
 
-accept_4 :: forall msg state. EffectFn2 Req (State msg state) (Cowboy.RestResult Boolean (State msg state))
+accept_4 :: forall msg state. EffectFn2 Req (State msg state) (Cowboy.RestResult AcceptHandlerResult (State msg state))
 accept_4 = accept 4
 
-accept_5 :: forall msg state. EffectFn2 Req (State msg state) (Cowboy.RestResult Boolean (State msg state))
+accept_5 :: forall msg state. EffectFn2 Req (State msg state) (Cowboy.RestResult AcceptHandlerResult (State msg state))
 accept_5 = accept 5
 
-accept_6 :: forall msg state. EffectFn2 Req (State msg state) (Cowboy.RestResult Boolean (State msg state))
+accept_6 :: forall msg state. EffectFn2 Req (State msg state) (Cowboy.RestResult AcceptHandlerResult (State msg state))
 accept_6 = accept 6
 
 provide_0 :: forall msg state. EffectFn2 Req (State msg state) (Cowboy.RestResult IOData (State msg state))

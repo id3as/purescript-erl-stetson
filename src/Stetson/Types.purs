@@ -25,6 +25,10 @@ module Stetson.Types
   , OptionalConfig(..)
   , RequestHandler(..)
   , StetsonRouteInner
+  , AcceptHandlerResult
+  , acceptSuccess
+  , acceptSuccessLocation
+  , acceptFailure
   , CowboyHandler(..)
   , LoopInitHandler(..)
   , LoopInfoHandler(..)
@@ -52,8 +56,9 @@ import Erl.Cowboy.Handlers.WebSocket (Frame)
 import Erl.Cowboy.Req (Req)
 import Erl.Cowboy.Routes as Routes
 import Erl.Data.Binary.IOData (IOData)
+import Erl.Data.Binary.IOData as IOData
 import Erl.Data.List (List)
-import Erl.Data.Tuple (Tuple2)
+import Erl.Data.Tuple (Tuple2, tuple2)
 import Erl.Kernel.Inet (Ip4Address, Port)
 import Erl.Kernel.Tcp as Tcp
 import Erl.ModuleName (NativeModuleName)
@@ -63,6 +68,7 @@ import Foreign (Foreign)
 import Prim.Row (class Union)
 import Routing.Duplex (RouteDuplex)
 import Stetson.Utils (unsafeMergeOptional)
+import Unsafe.Coerce (unsafeCoerce)
 
 foreign import data HandlerArgs :: Type
 
@@ -88,6 +94,22 @@ data RestResult reply state
   | RestStop Req state
   | RestSwitch CowboyHandler Req state
 
+-- | The return result of an AcceptHandler (success/failure/success with url)
+foreign import data AcceptHandlerResult :: Type
+
+-- | The resource was accepted succesfully
+acceptSuccess :: AcceptHandlerResult
+acceptSuccess = unsafeCoerce true
+
+-- | The resource was not accepted
+acceptFailure :: AcceptHandlerResult
+acceptFailure = unsafeCoerce false
+
+-- | The resource was accepted succesfully
+-- | And here is the URI of its new location
+acceptSuccessLocation :: String -> AcceptHandlerResult
+acceptSuccessLocation uri = unsafeCoerce $ tuple2 true $ IOData.fromString uri
+
 -- | The return type of the 'init' callback in the REST workflow
 data InitResult state
   = Rest Req state
@@ -100,7 +122,7 @@ type InitHandler state
 
 -- | A callback invoked to 'accept' a specific content type
 type AcceptHandler state
-  = Req -> state -> Effect (RestResult Boolean state)
+  = Req -> state -> Effect (RestResult AcceptHandlerResult state)
 
 -- | A callback invoked to 'provide' a specific content type
 type ProvideHandler state

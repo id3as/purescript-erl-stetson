@@ -48,7 +48,7 @@ import RoutingDuplexMiddleware as RoutingMiddleware
 import Stetson.ModuleNames as ModuleNames
 import Stetson.Routing (class GDispatch, gDispatch)
 import Stetson.Routing as Routing
-import Stetson.Types (AcceptHandler, Authorized(..), CowboyHandler(..), HandlerArgs, HttpMethod(..), InitHandler, InitResult(..), LoopCallResult(..), ProvideHandler, RestResult(..), RouteConfig, RouteHandler(..), SimpleStetsonHandler, StaticAssetLocation(..), StetsonHandler(..), WebSocketCallResult(..), WebSocketHandleHandler, WebSocketInfoHandler, WebSocketInitHandler, StetsonConfig, emptyHandler, mkStetsonRoute, runStetsonRoute)
+import Stetson.Types (AcceptHandler, Authorized(..), CowboyHandler(..), HandlerArgs, HttpMethod(..), InitHandler, InitResult(..), LoopCallResult(..), ProvideHandler, RestResult(..), RouteConfig, RouteHandler(..), SimpleStetsonHandler, StaticAssetLocation(..), StetsonHandler(..), WebSocketCallResult(..), WebSocketHandleHandler, WebSocketInfoHandler, WebSocketInitHandler, StetsonConfig, emptyHandler, mkStetsonRoute, runStetsonRoute, AcceptHandlerResult, acceptSuccess, acceptFailure, acceptSuccessLocation)
 import Unsafe.Coerce (unsafeCoerce)
 
 -- | Creates a blank stetson config with default settings and no routes
