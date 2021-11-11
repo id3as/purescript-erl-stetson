@@ -43,7 +43,6 @@ module Stetson.Types
   ) where
 
 import Prelude
-
 import Control.Monad.Reader (ReaderT)
 import Control.Monad.Reader as Reader
 import Control.Monad.Reader.Class (class MonadAsk)
@@ -169,6 +168,7 @@ data HttpMethod
   | OPTIONS
   | PUT
   | DELETE
+  | PATCH
 
 -- | Return type of the isAuthorized callback
 data Authorized
@@ -183,6 +183,7 @@ instance showHttpMethod :: Show HttpMethod where
     OPTIONS -> "OPTIONS"
     PUT -> "PUT"
     DELETE -> "DELETE"
+    PATCH -> "PATCH"
 
 -- | Return type of most WebSocket callbacks
 data WebSocketCallResult state
@@ -233,7 +234,6 @@ data LoopCallResult state
   = LoopOk Req state
   | LoopHibernate Req state
   | LoopStop Req state
-
 
 -- | All of the Loop handlers take place in a ReaderT so we can do things like get the current pid
 type LoopResult msg r
