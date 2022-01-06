@@ -21,7 +21,7 @@ import Pinto (RegistryName(..), StartLinkResult)
 import Pinto.GenServer as GS
 import Pinto.Types (RegistryReference(..))
 import Simple.JSON (class WriteForeign, readJSON, writeJSON)
-import Stetson (Authorized(..), RestResult, SimpleStetsonHandler, StetsonHandler)
+import Stetson (Authorized(..), RestResult, SimpleStetsonHandler, StetsonHandler, acceptFailure, acceptSuccess)
 import Stetson as Stetson
 import Stetson.Rest as Rest
 import Stetson.Test.Routes as TestRoutes
@@ -157,7 +157,7 @@ fullyLoadedHandler =
   acceptJson req state = do
     body <- allBody req mempty
     _result <- either (pure <<< Left <<< show) handlePayload $ readJSON $ unsafeCoerce body
-    Rest.result true req state
+    Rest.result acceptSuccess req state
 
   handlePayload :: forall a. String -> Effect (Either a HandlerState)
   handlePayload payload = do
@@ -192,9 +192,9 @@ test2 =
     result <- either (pure <<< Left <<< show) handlePayload $ readJSON $ unsafeCoerce body
     case result of
       -- The point being that Left -> Failure -> False -> Err as the body
-      Left err -> Rest.result false (setBody err req) state
+      Left err -> Rest.result acceptFailure (setBody err req) state
       -- And Right -> Success -> True and no body
-      Right _c -> Rest.result true req state
+      Right _c -> Rest.result acceptSuccess req state
 
   handlePayload :: forall a. String -> Effect (Either a HandlerState)
   handlePayload payload = do
