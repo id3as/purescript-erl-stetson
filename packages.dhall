@@ -61,3 +61,4 @@ in (upstream // additions)
   with erl-pinto.version = "609aa44378f583369b4dfa47542574cf786a533d"
   with erl-kernel.version = "a862207a32a8c61e66f7c8d5cfbfee47c91b529e"
   with erl-untagged-union.version = "781b2894f9ffcc91b7aea482e435bb9284596f62"
+  with simple-json.version = "v7.0.0-erl5"
