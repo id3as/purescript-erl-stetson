@@ -61,8 +61,9 @@ import Erl.Data.Tuple (Tuple2, tuple2)
 import Erl.Kernel.Inet (Ip4Address, Port)
 import Erl.Kernel.Tcp as Tcp
 import Erl.ModuleName (NativeModuleName)
-import Erl.Process (Process, class HasSelf, class ReceivesMessage)
+import Erl.Process (Process, class HasSelf)
 import Erl.Ssl as Ssl
+import Erl.Untagged.Union (class ReceivesMessage)
 import Foreign (Foreign)
 import Prim.Row (class Union)
 import Routing.Duplex (RouteDuplex)
