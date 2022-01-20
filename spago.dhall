@@ -13,6 +13,7 @@
   , "erl-process"
   , "erl-ssl"
   , "erl-tuples"
+  , "erl-untagged-union"
   , "exceptions"
   , "exists"
   , "foldable-traversable"
