@@ -75,26 +75,31 @@ configure =
   mod :: String -> NativeModuleName
   mod s = NativeModuleName (atom s)
 
-routes ::
-  forall t' a' t a rep r.
-  Generic a rep =>
-  GDispatch rep r =>
-  RouteDuplex t a -> { | r } -> StetsonConfig t' a' -> StetsonConfig t a
+routes
+  :: forall t' a' t a rep r
+   . Generic a rep
+  => GDispatch rep r
+  => RouteDuplex t a
+  -> { | r }
+  -> StetsonConfig t' a'
+  -> StetsonConfig t a
 routes routing d config = config { routes = { routing: routing, dispatch: dispatchTable d } }
   where
-  dispatchTable ::
-    { | r } -> a -> RouteHandler
+  dispatchTable
+    :: { | r } -> a -> RouteHandler
   dispatchTable r a = gDispatch r (from a)
 
-routes2 ::
-  forall t a rep r.
-  Generic a rep =>
-  GDispatch rep r =>
-  RouteDuplex t a -> { | r } -> RouteConfig t a
+routes2
+  :: forall t a rep r
+   . Generic a rep
+  => GDispatch rep r
+  => RouteDuplex t a
+  -> { | r }
+  -> RouteConfig t a
 routes2 routing d = { routing: routing, dispatch: dispatchTable d }
   where
-  dispatchTable ::
-    { | r } -> a -> RouteHandler
+  dispatchTable
+    :: { | r } -> a -> RouteHandler
   dispatchTable r a = gDispatch r (from a)
 
 -- | Introduce a list of native Erlang cowboy handlers to this config
@@ -133,11 +138,11 @@ startClear name config@{ bindAddress, bindPort, tcpOptions: tcpOptions_ } = do
     opts =
       Cowboy.defaultOptions
         { socket_opts =
-          Just
-            $ listenOpts
-                { port = listenOpts.port <|> Just bindPort
-                , ip = listenOpts.ip <|> (Just $ IpAddress $ Ip4 bindAddress)
-                }
+            Just
+              $ listenOpts
+                  { port = listenOpts.port <|> Just bindPort
+                  , ip = listenOpts.ip <|> (Just $ IpAddress $ Ip4 bindAddress)
+                  }
         }
   Cowboy.startClear (atom name) opts (protoOpts config)
 
@@ -149,11 +154,11 @@ startTls name config@{ bindAddress, bindPort, tlsOptions: tlsOptions_ } = do
     opts =
       Cowboy.defaultOptions
         { socket_opts =
-          Just
-            $ listenOpts
-                { port = listenOpts.port <|> Just bindPort
-                , ip = listenOpts.ip <|> (Just $ IpAddress $ Ip4 bindAddress)
-                }
+            Just
+              $ listenOpts
+                  { port = listenOpts.port <|> Just bindPort
+                  , ip = listenOpts.ip <|> (Just $ IpAddress $ Ip4 bindAddress)
+                  }
         }
   Cowboy.startTls (atom name) opts (protoOpts config)
 
@@ -188,11 +193,26 @@ protoOpts config@{ streamHandlers: streamHandlers_, middlewares: middlewares_, c
               { mod: CowboyStatic.moduleName
               , args: unsafeToForeign $ tuple3 (atom "priv_dir") (atom app) dir
               }
+    StaticRoute pathSegments (StaticDir dir) ->
+      let
+        req' = Map.insert (atom "path_info") (List.fromFoldable pathSegments) (unsafeCoerce req :: Map Atom (List String))
+      in
+        tuple2 (unsafeCoerce req' :: Req)
+          $ Right
+              { mod: CowboyStatic.moduleName
+              , args: unsafeToForeign $ tuple2 (atom "dir") dir
+              }
     StaticRoute _ (PrivFile app file) ->
       tuple2 req
         $ Right
             { mod: CowboyStatic.moduleName
             , args: unsafeToForeign $ tuple3 (atom "priv_file") (atom app) file
+            }
+    StaticRoute _ (StaticFile file) ->
+      tuple2 req
+        $ Right
+            { mod: CowboyStatic.moduleName
+            , args: unsafeToForeign $ tuple3 (atom "file") file
             }
     CowboyRouteFallthrough -> tuple2 req $ Left CowboyRouterFallback
 

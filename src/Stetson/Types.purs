@@ -117,49 +117,44 @@ data InitResult state
   | Loop Req state
 
 -- | The callback invoked to kick off the REST workflow
-type InitHandler state
-  = Req -> Effect (InitResult state)
+type InitHandler state = Req -> Effect (InitResult state)
 
 -- | A callback invoked to 'accept' a specific content type
-type AcceptHandler state
-  = Req -> state -> Effect (RestResult AcceptHandlerResult state)
+type AcceptHandler state = Req -> state -> Effect (RestResult AcceptHandlerResult state)
 
 -- | A callback invoked to 'provide' a specific content type
-type ProvideHandler state
-  = Req -> state -> Effect (RestResult IOData state)
+type ProvideHandler state = Req -> state -> Effect (RestResult IOData state)
 
 -- | A builder containing the complete set of callbacks for any sort of request
-data StetsonHandler msg state
-  = StetsonHandler (StetsonHandlerCallbacks msg state)
+data StetsonHandler msg state = StetsonHandler (StetsonHandlerCallbacks msg state)
 
 -- | A type alias for StetsonHandler, but with no ability to receive messages
-type SimpleStetsonHandler state
-  = StetsonHandler Unit state
+type SimpleStetsonHandler state = StetsonHandler Unit state
 
 -- | The built record containing callbacks for any sort of request
-type StetsonHandlerCallbacks msg state
-  = { init :: Req -> Effect (InitResult state)
-    , terminate :: Maybe (Foreign -> Req -> state -> Effect Unit)
-    , allowedMethods :: Maybe (Req -> state -> Effect (RestResult (List HttpMethod) state))
-    , resourceExists :: Maybe (Req -> state -> Effect (RestResult Boolean state))
-    , malformedRequest :: Maybe (Req -> state -> Effect (RestResult Boolean state))
-    , allowMissingPost :: Maybe (Req -> state -> Effect (RestResult Boolean state))
-    , contentTypesAccepted :: Maybe (Req -> state -> Effect (RestResult (List (Tuple2 String (AcceptHandler state))) state))
-    , contentTypesProvided :: Maybe (Req -> state -> Effect (RestResult (List (Tuple2 String (ProvideHandler state))) state))
-    , deleteResource :: Maybe (Req -> state -> Effect (RestResult Boolean state))
-    , isAuthorized :: Maybe (Req -> state -> Effect (RestResult Authorized state))
-    , movedTemporarily :: Maybe (Req -> state -> Effect (RestResult MovedResult state))
-    , movedPermanently :: Maybe (Req -> state -> Effect (RestResult MovedResult state))
-    , serviceAvailable :: Maybe (Req -> state -> Effect (RestResult Boolean state))
-    , previouslyExisted :: Maybe (Req -> state -> Effect (RestResult Boolean state))
-    , forbidden :: Maybe (Req -> state -> Effect (RestResult Boolean state))
-    , isConflict :: Maybe (Req -> state -> Effect (RestResult Boolean state))
-    , wsInit :: Maybe (WebSocketInitHandler msg state)
-    , wsHandle :: Maybe (WebSocketHandleHandler msg state)
-    , wsInfo :: Maybe (WebSocketInfoHandler msg state)
-    , loopInfo :: Maybe (LoopInfoHandler msg state)
-    , loopInit :: Maybe (LoopInitHandler msg state)
-    }
+type StetsonHandlerCallbacks msg state =
+  { init :: Req -> Effect (InitResult state)
+  , terminate :: Maybe (Foreign -> Req -> state -> Effect Unit)
+  , allowedMethods :: Maybe (Req -> state -> Effect (RestResult (List HttpMethod) state))
+  , resourceExists :: Maybe (Req -> state -> Effect (RestResult Boolean state))
+  , malformedRequest :: Maybe (Req -> state -> Effect (RestResult Boolean state))
+  , allowMissingPost :: Maybe (Req -> state -> Effect (RestResult Boolean state))
+  , contentTypesAccepted :: Maybe (Req -> state -> Effect (RestResult (List (Tuple2 String (AcceptHandler state))) state))
+  , contentTypesProvided :: Maybe (Req -> state -> Effect (RestResult (List (Tuple2 String (ProvideHandler state))) state))
+  , deleteResource :: Maybe (Req -> state -> Effect (RestResult Boolean state))
+  , isAuthorized :: Maybe (Req -> state -> Effect (RestResult Authorized state))
+  , movedTemporarily :: Maybe (Req -> state -> Effect (RestResult MovedResult state))
+  , movedPermanently :: Maybe (Req -> state -> Effect (RestResult MovedResult state))
+  , serviceAvailable :: Maybe (Req -> state -> Effect (RestResult Boolean state))
+  , previouslyExisted :: Maybe (Req -> state -> Effect (RestResult Boolean state))
+  , forbidden :: Maybe (Req -> state -> Effect (RestResult Boolean state))
+  , isConflict :: Maybe (Req -> state -> Effect (RestResult Boolean state))
+  , wsInit :: Maybe (WebSocketInitHandler msg state)
+  , wsHandle :: Maybe (WebSocketHandleHandler msg state)
+  , wsInfo :: Maybe (WebSocketInfoHandler msg state)
+  , loopInfo :: Maybe (LoopInfoHandler msg state)
+  , loopInit :: Maybe (LoopInitHandler msg state)
+  }
 
 -- | or is it a verb
 data HttpMethod
@@ -194,8 +189,7 @@ data WebSocketCallResult state
   | ReplyAndHibernate (List Frame) state
   | Stop state
 
-newtype ResultT msg result
-  = ResultT (ReaderT (Process msg) Effect result)
+newtype ResultT msg result = ResultT (ReaderT (Process msg) Effect result)
 
 unwrapResult :: forall msg result. ResultT msg result -> (ReaderT (Process msg) Effect result)
 unwrapResult (ResultT inner) = inner
@@ -213,22 +207,18 @@ instance handlerT_HasSelf :: HasSelf (ResultT msg) msg where
   self = Reader.ask
 
 -- | All of the Loop handlers take place in a ReaderT so we can do things like get the current pid
-type WebSocketResult msg r
-  = ResultT msg r
+type WebSocketResult msg r = ResultT msg r
 
 -- | Callback used to kick off the WebSocket handler
 -- | This is a good time to get hold of 'self' and set up subscriptions
-type WebSocketInitHandler msg state
-  = state -> WebSocketResult msg (WebSocketCallResult state)
+type WebSocketInitHandler msg state = state -> WebSocketResult msg (WebSocketCallResult state)
 
 -- | Callback used to handle messages sent from the client in the form of 'Frames' which will need
 -- | unpacking/decoding/parsing etc
-type WebSocketHandleHandler msg state
-  = Frame -> state -> WebSocketResult msg (WebSocketCallResult state)
+type WebSocketHandleHandler msg state = Frame -> state -> WebSocketResult msg (WebSocketCallResult state)
 
 -- | Callback used to handle messages sent from Erlang (hopefully via the router) so they'll be of the right type
-type WebSocketInfoHandler msg state
-  = msg -> state -> WebSocketResult msg (WebSocketCallResult state)
+type WebSocketInfoHandler msg state = msg -> state -> WebSocketResult msg (WebSocketCallResult state)
 
 -- | Return type of most Loop callbacks
 data LoopCallResult state
@@ -237,27 +227,24 @@ data LoopCallResult state
   | LoopStop Req state
 
 -- | All of the Loop handlers take place in a ReaderT so we can do things like get the current pid
-type LoopResult msg r
-  = ResultT msg r
+type LoopResult msg r = ResultT msg r
 
 -- | Callback used to kick off the Loop handler, it is here where subscriptions should be
 -- | created, and in their callbacks the messages should be passed into the router for dealing with in the info callback
-type LoopInitHandler msg state
-  = Req -> state -> LoopResult msg state
+type LoopInitHandler msg state = Req -> state -> LoopResult msg state
 
 -- | Callback used to handle messages sent from Erlang (hopefully via the router) so they'll be of the right type
-type LoopInfoHandler msg state
-  = msg -> Req -> state -> LoopResult msg (LoopCallResult state)
+type LoopInfoHandler msg state = msg -> Req -> state -> LoopResult msg (LoopCallResult state)
 
 data StaticAssetLocation
   = PrivDir String String
   | PrivFile String String
+  | StaticDir String
+  | StaticFile String
 
-data CowboyRoutePlaceholder
-  = CowboyRoutePlaceholder
+data CowboyRoutePlaceholder = CowboyRoutePlaceholder
 
-newtype StetsonRouteInner a
-  = StetsonRouteInner (Exists (StetsonHandler a))
+newtype StetsonRouteInner a = StetsonRouteInner (Exists (StetsonHandler a))
 
 mkStetsonRoute :: forall a s. StetsonHandler a s -> Exists StetsonRouteInner
 mkStetsonRoute r = mkExists (StetsonRouteInner $ mkExists r)
@@ -273,23 +260,23 @@ data RouteHandler
   | StaticRoute (Array String) StaticAssetLocation
   | CowboyRouteFallthrough
 
-type RouteConfig t a
-  = { routing :: RouteDuplex t a
-    , dispatch :: a -> RouteHandler
-    }
+type RouteConfig t a =
+  { routing :: RouteDuplex t a
+  , dispatch :: a -> RouteHandler
+  }
 
 -- Probably want to make this look a bit more like Cowboy's config internally
 -- Lists of maps or tuples or whatever the hell cowboy is using in whatever version we're bound to
-type StetsonConfig t a
-  = { bindPort :: Port
-    , bindAddress :: Ip4Address
-    , streamHandlers :: Maybe (List NativeModuleName)
-    , middlewares :: Maybe (List NativeModuleName)
-    , tcpOptions :: Maybe (Record Tcp.ListenOptions)
-    , tlsOptions :: Maybe (Record Ssl.ListenOptions)
-    , cowboyRoutes :: List Routes.Path
-    , routes :: RouteConfig t a
-    }
+type StetsonConfig t a =
+  { bindPort :: Port
+  , bindAddress :: Ip4Address
+  , streamHandlers :: Maybe (List NativeModuleName)
+  , middlewares :: Maybe (List NativeModuleName)
+  , tcpOptions :: Maybe (Record Tcp.ListenOptions)
+  , tlsOptions :: Maybe (Record Ssl.ListenOptions)
+  , cowboyRoutes :: List Routes.Path
+  , routes :: RouteConfig t a
+  }
 
 emptyHandler :: forall msg state. InitHandler state -> StetsonHandler msg state
 emptyHandler init =
@@ -318,49 +305,46 @@ emptyHandler init =
     }
 
 type Unlift :: forall k. k -> k
-type Unlift a
-  = a
+type Unlift a = a
 
-type RouteHandler2 msg state
-  = Config state (OptionalConfig Maybe msg state)
+type RouteHandler2 msg state = Config state (OptionalConfig Maybe msg state)
 
 type RequestHandler :: (Type -> Type) -> Type -> Type -> Type
-type RequestHandler f resultType state
-  = f (Req -> state -> Effect (RestResult resultType state))
+type RequestHandler f resultType state = f (Req -> state -> Effect (RestResult resultType state))
 
-type Config state r
-  = { init :: Req -> Effect (InitResult state)
-    | r
-    }
+type Config state r =
+  { init :: Req -> Effect (InitResult state)
+  | r
+  }
 
-type OptionalConfig f msg state
-  = ( allowedMethods :: RequestHandler f (List HttpMethod) state
-    , allowMissingPost :: RequestHandler f Boolean state
-    , contentTypesAccepted :: RequestHandler f (List (Tuple2 String (AcceptHandler state))) state
-    , contentTypesProvided :: RequestHandler f (List (Tuple2 String (ProvideHandler state))) state
-    , deleteResource :: RequestHandler f Boolean state
-    , forbidden :: RequestHandler f Boolean state
-    , isAuthorized :: RequestHandler f Authorized state
-    , isConflict :: RequestHandler f Boolean state
-    , loopInfo :: f (LoopInfoHandler msg state)
-    , loopInit :: f (LoopInitHandler msg state)
-    , malformedRequest :: RequestHandler f Boolean state
-    , movedPermanently :: RequestHandler f MovedResult state
-    , movedTemporarily :: RequestHandler f MovedResult state
-    , previouslyExisted :: RequestHandler f Boolean state
-    , resourceExists :: RequestHandler f Boolean state
-    , serviceAvailable :: RequestHandler f Boolean state
-    , terminate :: f (Foreign -> Req -> state -> Effect Unit)
-    , wsHandle :: f (WebSocketHandleHandler msg state)
-    , wsInfo :: f (WebSocketInfoHandler msg state)
-    , wsInit :: f (WebSocketInitHandler msg state)
-    )
+type OptionalConfig f msg state =
+  ( allowedMethods :: RequestHandler f (List HttpMethod) state
+  , allowMissingPost :: RequestHandler f Boolean state
+  , contentTypesAccepted :: RequestHandler f (List (Tuple2 String (AcceptHandler state))) state
+  , contentTypesProvided :: RequestHandler f (List (Tuple2 String (ProvideHandler state))) state
+  , deleteResource :: RequestHandler f Boolean state
+  , forbidden :: RequestHandler f Boolean state
+  , isAuthorized :: RequestHandler f Authorized state
+  , isConflict :: RequestHandler f Boolean state
+  , loopInfo :: f (LoopInfoHandler msg state)
+  , loopInit :: f (LoopInitHandler msg state)
+  , malformedRequest :: RequestHandler f Boolean state
+  , movedPermanently :: RequestHandler f MovedResult state
+  , movedTemporarily :: RequestHandler f MovedResult state
+  , previouslyExisted :: RequestHandler f Boolean state
+  , resourceExists :: RequestHandler f Boolean state
+  , serviceAvailable :: RequestHandler f Boolean state
+  , terminate :: f (Foreign -> Req -> state -> Effect Unit)
+  , wsHandle :: f (WebSocketHandleHandler msg state)
+  , wsInfo :: f (WebSocketInfoHandler msg state)
+  , wsInit :: f (WebSocketInitHandler msg state)
+  )
 
-type RouteHandlerFactory msg state
-  = forall options trash.
-    Union options trash (OptionalConfig Unlift msg state) =>
-    Config state options ->
-    RouteHandler2 msg state
+type RouteHandlerFactory msg state =
+  forall options trash
+   . Union options trash (OptionalConfig Unlift msg state)
+  => Config state options
+  -> RouteHandler2 msg state
 
 defaults :: forall msg state. Record (OptionalConfig Maybe msg state)
 defaults =
@@ -386,8 +370,9 @@ defaults =
   , wsInit: Nothing
   }
 
-routeHandler ::
-  forall optional trash msg state.
-  Union optional trash (OptionalConfig Unlift msg state) =>
-  Config state optional -> StetsonHandler msg state
+routeHandler
+  :: forall optional trash msg state
+   . Union optional trash (OptionalConfig Unlift msg state)
+  => Config state optional
+  -> StetsonHandler msg state
 routeHandler config = StetsonHandler $ unsafeMergeOptional defaults config
