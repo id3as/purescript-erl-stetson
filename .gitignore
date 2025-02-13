@@ -7,3 +7,4 @@ rebar3.crashdump
 erl_crash.dump
 generated-docs/
 .psc-ide-port
+ebin
