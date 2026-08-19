@@ -1,11 +1,5 @@
 ## Module Stetson.Loop
 
-#### `self`
-
-``` purescript
-self :: forall msg. StateT (Process msg) Effect (Process msg)
-```
-
 #### `initResult`
 
 ``` purescript
@@ -30,12 +24,28 @@ handler :: forall msg state. InitHandler state -> StetsonHandler msg state
 info :: forall msg state. LoopInfoHandler msg state -> StetsonHandler msg state -> StetsonHandler msg state
 ```
 
-
-### Re-exported from Control.Monad.Trans.Class:
-
-#### `lift`
+#### `terminate`
 
 ``` purescript
-lift :: forall t m a. MonadTrans t => Monad m => m a -> t m a
+terminate :: forall msg state. (Foreign -> Req -> state -> Effect Unit) -> StetsonHandler msg state -> StetsonHandler msg state
+```
+
+Add a terminate callback to the provided StetsonHandler
+
+
+### Re-exported from Effect.Class:
+
+#### `liftEffect`
+
+``` purescript
+liftEffect :: forall m a. MonadEffect m => Effect a -> m a
+```
+
+### Re-exported from Erl.Process:
+
+#### `self`
+
+``` purescript
+self :: forall x a. HasSelf x a => x (Process a)
 ```
 

@@ -6,7 +6,7 @@ You'll want to call Stetson.configure and then follow the types..
 #### `configure`
 
 ``` purescript
-configure :: StetsonConfig NoArguments
+configure :: StetsonConfig NoArguments NoArguments
 ```
 
 Creates a blank stetson config with default settings and no routes
@@ -14,7 +14,7 @@ Creates a blank stetson config with default settings and no routes
 #### `cowboyRoutes`
 
 ``` purescript
-cowboyRoutes :: forall a. List Path -> StetsonConfig a -> StetsonConfig a
+cowboyRoutes :: forall t a. List Path -> StetsonConfig t a -> StetsonConfig t a
 ```
 
 Introduce a list of native Erlang cowboy handlers to this config
@@ -22,19 +22,19 @@ Introduce a list of native Erlang cowboy handlers to this config
 #### `routes`
 
 ``` purescript
-routes :: forall a b rep r. Generic a rep => GDispatch rep r => RouteDuplex' a -> Record r -> StetsonConfig b -> StetsonConfig a
+routes :: forall t' a' t a rep r. Generic a rep => GDispatch rep r => RouteDuplex t a -> Record r -> StetsonConfig t' a' -> StetsonConfig t a
 ```
 
 #### `routes2`
 
 ``` purescript
-routes2 :: forall a rep r. Generic a rep => GDispatch rep r => RouteDuplex' a -> Record r -> RouteConfig a
+routes2 :: forall t a rep r. Generic a rep => GDispatch rep r => RouteDuplex t a -> Record r -> RouteConfig t a
 ```
 
 #### `port`
 
 ``` purescript
-port :: forall a. Int -> StetsonConfig a -> StetsonConfig a
+port :: forall t a. Port -> StetsonConfig t a -> StetsonConfig t a
 ```
 
 Set the port that this http listener will listen to
@@ -42,7 +42,7 @@ Set the port that this http listener will listen to
 #### `bindTo`
 
 ``` purescript
-bindTo :: forall a. Int -> Int -> Int -> Int -> StetsonConfig a -> StetsonConfig a
+bindTo :: forall t a. Ip4Address -> StetsonConfig t a -> StetsonConfig t a
 ```
 
 Set the IP that this http listener will bind to (default: 0.0.0.0)
@@ -50,7 +50,7 @@ Set the IP that this http listener will bind to (default: 0.0.0.0)
 #### `streamHandlers`
 
 ``` purescript
-streamHandlers :: forall a. List NativeModuleName -> StetsonConfig a -> StetsonConfig a
+streamHandlers :: forall t a. List NativeModuleName -> StetsonConfig t a -> StetsonConfig t a
 ```
 
 Supply a list of modules to act as native stream handlers in cowboy
@@ -58,18 +58,42 @@ Supply a list of modules to act as native stream handlers in cowboy
 #### `middlewares`
 
 ``` purescript
-middlewares :: forall a. List NativeModuleName -> StetsonConfig a -> StetsonConfig a
+middlewares :: forall t a. List NativeModuleName -> StetsonConfig t a -> StetsonConfig t a
 ```
 
 Supply a list of modules to act as native middlewares in cowboy
 
+#### `tcpOptions`
+
+``` purescript
+tcpOptions :: forall t a. Record ListenOptions -> StetsonConfig t a -> StetsonConfig t a
+```
+
+Supply tcp transport options for cowboy/ranch
+
+#### `tlsOptions`
+
+``` purescript
+tlsOptions :: forall t a. Record ListenOptions -> StetsonConfig t a -> StetsonConfig t a
+```
+
+Supply tls/ssl transport options for cowboy/ranch
+
 #### `startClear`
 
 ``` purescript
-startClear :: forall a. String -> StetsonConfig a -> Effect (Either Foreign Unit)
+startClear :: forall t a. String -> StetsonConfig t a -> Effect (Either Foreign Unit)
 ```
 
 Start the listener with the specified name
+
+#### `startTls`
+
+``` purescript
+startTls :: forall t a. String -> StetsonConfig t a -> Effect (Either Foreign Unit)
+```
+
+Start the TLS listener with the specified name
 
 #### `stop`
 
@@ -131,7 +155,7 @@ A builder containing the complete set of callbacks for any sort of request
 #### `StetsonConfig`
 
 ``` purescript
-type StetsonConfig a = { bindAddress :: Tuple4 Int Int Int Int, bindPort :: Int, cowboyRoutes :: List Path, middlewares :: Maybe (List NativeModuleName), routes :: RouteConfig a, streamHandlers :: Maybe (List NativeModuleName) }
+type StetsonConfig t a = { bindAddress :: Ip4Address, bindPort :: Port, cowboyRoutes :: List Path, middlewares :: Maybe (List NativeModuleName), routes :: RouteConfig t a, streamHandlers :: Maybe (List NativeModuleName), tcpOptions :: Maybe (Record ListenOptions), tlsOptions :: Maybe (Record ListenOptions) }
 ```
 
 #### `StaticAssetLocation`
@@ -140,6 +164,8 @@ type StetsonConfig a = { bindAddress :: Tuple4 Int Int Int Int, bindPort :: Int,
 data StaticAssetLocation
   = PrivDir String String
   | PrivFile String String
+  | StaticDir String
+  | StaticFile String
 ```
 
 #### `SimpleStetsonHandler`
@@ -162,7 +188,7 @@ data RouteHandler
 #### `RouteConfig`
 
 ``` purescript
-type RouteConfig a = { dispatch :: a -> RouteHandler, routing :: RouteDuplex' a }
+type RouteConfig t a = { dispatch :: a -> RouteHandler, routing :: RouteDuplex t a }
 ```
 
 #### `RestResult`
@@ -179,7 +205,7 @@ The return type of most of the callbacks invoked as part of the REST workflow
 #### `ProvideHandler`
 
 ``` purescript
-type ProvideHandler state = Req -> state -> Effect (RestResult String state)
+type ProvideHandler state = Req -> state -> Effect (RestResult IOData state)
 ```
 
 A callback invoked to 'provide' a specific content type
@@ -224,6 +250,7 @@ data HttpMethod
   | OPTIONS
   | PUT
   | DELETE
+  | PATCH
 ```
 
 or is it a verb
@@ -236,7 +263,7 @@ Show HttpMethod
 #### `HandlerArgs`
 
 ``` purescript
-data HandlerArgs :: Type
+data HandlerArgs
 ```
 
 #### `CowboyHandler`
@@ -261,10 +288,18 @@ data Authorized
 
 Return type of the isAuthorized callback
 
+#### `AcceptHandlerResult`
+
+``` purescript
+data AcceptHandlerResult
+```
+
+The return result of an AcceptHandler (success/failure/success with url)
+
 #### `AcceptHandler`
 
 ``` purescript
-type AcceptHandler state = Req -> state -> Effect (RestResult Boolean state)
+type AcceptHandler state = Req -> state -> Effect (RestResult AcceptHandlerResult state)
 ```
 
 A callback invoked to 'accept' a specific content type
@@ -286,4 +321,29 @@ mkStetsonRoute :: forall a s. StetsonHandler a s -> Exists StetsonRouteInner
 ``` purescript
 emptyHandler :: forall msg state. InitHandler state -> StetsonHandler msg state
 ```
+
+#### `acceptSuccessLocation`
+
+``` purescript
+acceptSuccessLocation :: String -> AcceptHandlerResult
+```
+
+The resource was accepted succesfully
+And here is the URI of its new location
+
+#### `acceptSuccess`
+
+``` purescript
+acceptSuccess :: AcceptHandlerResult
+```
+
+The resource was accepted succesfully
+
+#### `acceptFailure`
+
+``` purescript
+acceptFailure :: AcceptHandlerResult
+```
+
+The resource was not accepted
 
