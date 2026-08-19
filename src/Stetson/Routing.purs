@@ -44,6 +44,8 @@ instance gDispatchC1 :: GDispatchCtor (Argument a) (a -> (StetsonHandler x s)) w
 
 instance gDispatchStatic1 :: GDispatchCtor (Argument (Array String)) StaticAssetLocation where
   gDispatchC route (Argument a) = StaticRoute a route
+else instance gDispatchStaticFn :: GDispatchCtor (Argument (Array String)) (Array String -> StaticAssetLocation) where
+  gDispatchC route (Argument a) = StaticRoute a (route a)
 else instance gDispatchStatic1Ignore :: GDispatchCtor (Argument a) (a -> StaticAssetLocation) where
   gDispatchC route (Argument a) = StaticRoute [] (route a)
 
