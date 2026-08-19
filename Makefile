@@ -24,7 +24,7 @@ docs: output/.complete
 	spago docs --format markdown
 	cp generated-docs/md/Stetson*.md docs
 
-.spago: spago.dhall test.dhall packages.dhall
+.spago: spago.yaml spago.lock
 	spago install
 	touch .spago
 
@@ -38,7 +38,7 @@ test: output/.complete
 clean:
 	rebar3 as dist_profile clean
 	rebar3 as test_profile clean
-	rm -rf output testoutput
+	rm -rf output generated-docs
 
 distclean: clean
 	rm -rf .spago _build
