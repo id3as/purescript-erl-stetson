@@ -18,6 +18,7 @@ module Stetson.Rest
   , previouslyExisted
   , switchHandler
   , forbidden
+  , generateEtag
   , terminate
   , initResult
   , result
@@ -34,7 +35,7 @@ import Erl.Cowboy.Handlers.Rest (MovedResult)
 import Erl.Cowboy.Req (Req)
 import Erl.Data.List (List)
 import Erl.Data.Tuple (Tuple2)
-import Stetson.Types (AcceptHandler, Authorized, CowboyHandler, HttpMethod, InitHandler, InitResult(..), ProvideHandler, RestResult(..), StetsonHandler(..), emptyHandler)
+import Stetson.Types (AcceptHandler, Authorized, CowboyHandler, ETag, HttpMethod, InitHandler, InitResult(..), ProvideHandler, RestResult(..), StetsonHandler(..), emptyHandler)
 
 -- | Create a cowboy REST handler with the provided Init handler and no callbacks defined
 handler :: forall state. InitHandler state -> StetsonHandler Unit state
@@ -96,6 +97,13 @@ allowMissingPost fn (StetsonHandler h) = (StetsonHandler $ h { allowMissingPost 
 forbidden :: forall msg state. (Req -> state -> Effect (RestResult Boolean state)) -> StetsonHandler msg state -> StetsonHandler msg state
 forbidden fn (StetsonHandler h) = (StetsonHandler $ h { forbidden = Just fn })
 
+-- | Add a generate_etag callback to the provided StetsonHandler. Return a
+-- | `Strong tag` or `Weak tag` with the raw (unquoted) tag content; Stetson
+-- | renders the wire form. Cowboy sets it as the `ETag` response header and
+-- | evaluates `If-None-Match` / `If-Match` against it (304 / 412) natively.
+generateEtag :: forall msg state. (Req -> state -> Effect (RestResult ETag state)) -> StetsonHandler msg state -> StetsonHandler msg state
+generateEtag fn (StetsonHandler h) = (StetsonHandler $ h { generateEtag = Just fn })
+
 -- | Add a terminate callback to the provided StetsonHandler
 terminate :: forall msg state. (Foreign -> Req -> state -> Effect Unit) -> StetsonHandler msg state -> StetsonHandler msg state
 terminate fn (StetsonHandler h) = (StetsonHandler $ h { terminate = Just fn })
@@ -151,6 +159,7 @@ preHook' hook (StetsonHandler state) =
     , previouslyExisted: hook "previouslyExisted" <$> state.previouslyExisted
     , allowMissingPost: hook "allowMissingPost" <$> state.allowMissingPost
     , forbidden: hook "forbidden" <$> state.forbidden
+    , generateEtag: hook "generateEtag" <$> state.generateEtag
     -- TODO: These
     , wsInit: state.wsInit
     , wsHandle: state.wsHandle
