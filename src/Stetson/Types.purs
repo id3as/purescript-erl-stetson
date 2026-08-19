@@ -11,6 +11,7 @@ module Stetson.Types
   , WebSocketCallResult(..)
   , HttpMethod(..)
   , Authorized(..)
+  , ETag(..)
   , StetsonHandler(..)
   , SimpleStetsonHandler(..)
   , StetsonHandlerCallbacks(..)
@@ -149,6 +150,7 @@ type StetsonHandlerCallbacks msg state =
   , previouslyExisted :: Maybe (Req -> state -> Effect (RestResult Boolean state))
   , forbidden :: Maybe (Req -> state -> Effect (RestResult Boolean state))
   , isConflict :: Maybe (Req -> state -> Effect (RestResult Boolean state))
+  , generateEtag :: Maybe (Req -> state -> Effect (RestResult ETag state))
   , wsInit :: Maybe (WebSocketInitHandler msg state)
   , wsHandle :: Maybe (WebSocketHandleHandler msg state)
   , wsInfo :: Maybe (WebSocketInfoHandler msg state)
@@ -170,6 +172,13 @@ data HttpMethod
 data Authorized
   = Authorized
   | NotAuthorized String
+
+-- | Return type of the generateEtag callback: a strong or weak entity tag. The
+-- | String is the raw tag content, unquoted — Stetson renders the wire form
+-- | (`"tag"` / `W/"tag"`) so callers don't hand-quote.
+data ETag
+  = Strong String
+  | Weak String
 
 instance showHttpMethod :: Show HttpMethod where
   show method = case method of
@@ -297,6 +306,7 @@ emptyHandler init =
     , previouslyExisted: Nothing
     , allowMissingPost: Nothing
     , forbidden: Nothing
+    , generateEtag: Nothing
     , wsInit: Nothing
     , wsHandle: Nothing
     , wsInfo: Nothing
@@ -324,6 +334,7 @@ type OptionalConfig f msg state =
   , contentTypesProvided :: RequestHandler f (List (Tuple2 String (ProvideHandler state))) state
   , deleteResource :: RequestHandler f Boolean state
   , forbidden :: RequestHandler f Boolean state
+  , generateEtag :: RequestHandler f ETag state
   , isAuthorized :: RequestHandler f Authorized state
   , isConflict :: RequestHandler f Boolean state
   , loopInfo :: f (LoopInfoHandler msg state)
@@ -354,6 +365,7 @@ defaults =
   , contentTypesProvided: Nothing
   , deleteResource: Nothing
   , forbidden: Nothing
+  , generateEtag: Nothing
   , isAuthorized: Nothing
   , isConflict: Nothing
   , loopInfo: Nothing

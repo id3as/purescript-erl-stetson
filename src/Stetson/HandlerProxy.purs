@@ -19,7 +19,7 @@ import Erl.ModuleName (NativeModuleName(..))
 import Erl.Process (Process)
 import Foreign (Foreign)
 import Stetson (WebSocketCallResult(..))
-import Stetson.Types (Authorized(..), CowboyHandler(..), InitResult(..), LoopCallResult(..), AcceptHandlerResult, RestResult(..), StetsonHandlerCallbacks, unwrapResult)
+import Stetson.Types (Authorized(..), CowboyHandler(..), ETag(..), InitResult(..), LoopCallResult(..), AcceptHandlerResult, RestResult(..), StetsonHandlerCallbacks, unwrapResult)
 import Unsafe.Coerce (unsafeCoerce)
 
 foreign import self :: forall msg. Effect (Process msg)
@@ -125,6 +125,18 @@ forbidden :: forall msg state. CowboyRest.ForbiddenHandler (State msg state)
 forbidden =
   mkEffectFn2 \req state@{ handler } ->
     call handler.forbidden req state
+
+-- Render the ETag ADT to its (quoted) wire form; cowboy parses it via its
+-- is_binary branch and evaluates If-None-Match / If-Match natively. When the
+-- handler sets no generateEtag, `callMap` returns `no_call`, which cowboy treats
+-- exactly as an unexported callback (no etag).
+generate_etag :: forall msg state. EffectFn2 Req (State msg state) (Cowboy.RestResult String (State msg state))
+generate_etag =
+  mkEffectFn2 \req state@{ handler } ->
+    callMap renderEtag handler.generateEtag req state
+  where
+  renderEtag (Strong tag) = "\"" <> tag <> "\""
+  renderEtag (Weak tag) = "W/\"" <> tag <> "\""
 
 delete_resource :: forall msg state. CowboyRest.DeleteResourceHandler (State msg state)
 delete_resource =
