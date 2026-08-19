@@ -33,7 +33,7 @@ The callback invoked to kick off the REST workflow
 #### `AcceptHandler`
 
 ``` purescript
-type AcceptHandler state = Req -> state -> Effect (RestResult Boolean state)
+type AcceptHandler state = Req -> state -> Effect (RestResult AcceptHandlerResult state)
 ```
 
 A callback invoked to 'accept' a specific content type
@@ -41,7 +41,7 @@ A callback invoked to 'accept' a specific content type
 #### `ProvideHandler`
 
 ``` purescript
-type ProvideHandler state = Req -> state -> Effect (RestResult String state)
+type ProvideHandler state = Req -> state -> Effect (RestResult IOData state)
 ```
 
 A callback invoked to 'provide' a specific content type
@@ -75,10 +75,10 @@ unpacking/decoding/parsing etc
 #### `WebSocketResult`
 
 ``` purescript
-type WebSocketResult msg r = StateT (WebSocketInternalState msg) Effect r
+type WebSocketResult msg r = ResultT msg r
 ```
 
-All of the Loop handlers take place in a StateT so we can do things like get the current pid
+All of the Loop handlers take place in a ReaderT so we can do things like get the current pid
 
 #### `WebSocketCallResult`
 
@@ -93,14 +93,6 @@ data WebSocketCallResult state
 
 Return type of most WebSocket callbacks
 
-#### `WebSocketInternalState`
-
-``` purescript
-type WebSocketInternalState msg = Process msg
-```
-
-We'll probably end up with more in here than just the current pid..
-
 #### `HttpMethod`
 
 ``` purescript
@@ -111,6 +103,7 @@ data HttpMethod
   | OPTIONS
   | PUT
   | DELETE
+  | PATCH
 ```
 
 or is it a verb
@@ -161,6 +154,8 @@ The built record containing callbacks for any sort of request
 data StaticAssetLocation
   = PrivDir String String
   | PrivFile String String
+  | StaticDir String
+  | StaticFile String
 ```
 
 #### `CowboyRoutePlaceholder`
@@ -173,19 +168,19 @@ data CowboyRoutePlaceholder
 #### `HandlerArgs`
 
 ``` purescript
-data HandlerArgs :: Type
+data HandlerArgs
 ```
 
 #### `StetsonConfig`
 
 ``` purescript
-type StetsonConfig a = { bindAddress :: Tuple4 Int Int Int Int, bindPort :: Int, cowboyRoutes :: List Path, middlewares :: Maybe (List NativeModuleName), routes :: RouteConfig a, streamHandlers :: Maybe (List NativeModuleName) }
+type StetsonConfig t a = { bindAddress :: Ip4Address, bindPort :: Port, cowboyRoutes :: List Path, middlewares :: Maybe (List NativeModuleName), routes :: RouteConfig t a, streamHandlers :: Maybe (List NativeModuleName), tcpOptions :: Maybe (Record ListenOptions), tlsOptions :: Maybe (Record ListenOptions) }
 ```
 
 #### `RouteConfig`
 
 ``` purescript
-type RouteConfig a = { dispatch :: a -> RouteHandler, routing :: RouteDuplex' a }
+type RouteConfig t a = { dispatch :: a -> RouteHandler, routing :: RouteDuplex t a }
 ```
 
 #### `RouteHandler`
@@ -227,6 +222,39 @@ type RequestHandler f resultType state = f (Req -> state -> Effect (RestResult r
 newtype StetsonRouteInner a
 ```
 
+#### `AcceptHandlerResult`
+
+``` purescript
+data AcceptHandlerResult
+```
+
+The return result of an AcceptHandler (success/failure/success with url)
+
+#### `acceptSuccess`
+
+``` purescript
+acceptSuccess :: AcceptHandlerResult
+```
+
+The resource was accepted succesfully
+
+#### `acceptSuccessLocation`
+
+``` purescript
+acceptSuccessLocation :: String -> AcceptHandlerResult
+```
+
+The resource was accepted succesfully
+And here is the URI of its new location
+
+#### `acceptFailure`
+
+``` purescript
+acceptFailure :: AcceptHandlerResult
+```
+
+The resource was not accepted
+
 #### `CowboyHandler`
 
 ``` purescript
@@ -256,21 +284,13 @@ type LoopInfoHandler msg state = msg -> Req -> state -> LoopResult msg (LoopCall
 
 Callback used to handle messages sent from Erlang (hopefully via the router) so they'll be of the right type
 
-#### `LoopInternalState`
-
-``` purescript
-type LoopInternalState msg = Process msg
-```
-
-We'll probably end up with more in here than just the current pid..
-
 #### `LoopResult`
 
 ``` purescript
-type LoopResult msg r = StateT (LoopInternalState msg) Effect r
+type LoopResult msg r = ResultT msg r
 ```
 
-All of the Loop handlers take place in a StateT so we can do things like get the current pid
+All of the Loop handlers take place in a ReaderT so we can do things like get the current pid
 
 #### `LoopCallResult`
 
@@ -305,6 +325,31 @@ emptyHandler :: forall msg state. InitHandler state -> StetsonHandler msg state
 
 ``` purescript
 routeHandler :: forall optional trash msg state. Union optional trash (OptionalConfig Unlift msg state) => Config state optional -> StetsonHandler msg state
+```
+
+#### `unwrapResult`
+
+``` purescript
+unwrapResult :: forall msg result. ResultT msg result -> (ReaderT (Process msg) Effect result)
+```
+
+#### `ResultT`
+
+``` purescript
+newtype ResultT msg result
+```
+
+##### Instances
+``` purescript
+Functor (ResultT msg)
+Apply (ResultT msg)
+Applicative (ResultT msg)
+Bind (ResultT msg)
+Monad (ResultT msg)
+MonadEffect (ResultT msg)
+MonadAsk (Process msg) (ResultT msg)
+ReceivesMessage (ResultT msg) msg
+HasSelf (ResultT msg) msg
 ```
 
 

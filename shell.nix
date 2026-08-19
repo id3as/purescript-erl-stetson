@@ -1,50 +1,42 @@
 let
-  erlangReleases = builtins.fetchTarball https://github.com/nixerl/nixpkgs-nixerl/archive/v1.0.18-devel.tar.gz;
-
+  # nixos-25.05: purescript 0.15.15, erlang 26, rebar3, erlang-ls
   pinnedNix =
     builtins.fetchGit {
       name = "nixpkgs-pinned";
       url = "https://github.com/NixOS/nixpkgs.git";
-      rev = "e5f945b13b3f6a39ec9fbb66c9794b277dc32aa1";
+      ref = "nixos-25.05";
+      rev = "ac62194c3917d5f474c1a844b6fd6da2db95077d";
+    };
+
+  # Modern spago (spago.yaml/spago.lock) - nixpkgs still ships the old dhall one
+  purescriptOverlay =
+    builtins.fetchGit {
+      name = "purescript-overlay";
+      url = "https://github.com/thomashoneyman/purescript-overlay.git";
+      ref = "main";
+      rev = "1cf88ab9d83596db0e0c0d304a16809c410e2917";
     };
 
   purerlReleases =
     builtins.fetchGit {
       url = "https://github.com/purerl/nixpkgs-purerl.git";
       ref = "master";
-      rev = "16582722c40f4c1a65c15f23e5f2438c6905981f";
-    };
-
-  purerlSupport =
-    builtins.fetchGit {
-      name = "purerl-support-packages";
-      url = "https://github.com/id3as/nixpkgs-purerl-support.git";
-      rev = "52926a56da6a8c526c403d26feaf52cc5f87a5d0";
+      rev = "69ea3146f3c4f715c5dbc6e0f8ba7d0ee57bb3bd";
     };
 
   nixpkgs =
     import pinnedNix {
       overlays = [
-        (import erlangReleases)
+        (import "${purescriptOverlay}/overlay.nix")
         (import purerlReleases)
-        (import purerlSupport)
       ];
     };
 
-
-  erlangChannel = nixpkgs.nixerl.erlang-23-2-1.overrideScope' (self: super: {
-    erlang = super.erlang.override {
-      wxSupport = false;
-    };
-  });
+  erlangChannel = nixpkgs.beam.packages.erlang_26;
 
 in
 
 with nixpkgs;
-
-let
-    inherit (stdenv.lib) optionals;
-in
 
 mkShell {
   buildInputs = with pkgs; [
@@ -53,11 +45,12 @@ mkShell {
     erlangChannel.rebar3
     erlangChannel.erlang-ls
 
-    purerl-support.purescript-0-14-4
-    purerl-support.spago-0-20-3
+    # Purescript compiler and build tool
+    purescript
+    spago
 
     # Purerl backend for purescript
-    purerl.purerl-0-0-12
+    purerl.purerl-0-0-22
 
   ];
 }

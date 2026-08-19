@@ -13,16 +13,45 @@ newtype State
 type HandlerState = { handler :: String, userData :: Maybe String }
 ```
 
+#### `Stop`
+
+``` purescript
+data Stop
+  = Stop
+```
+
+#### `Cont`
+
+``` purescript
+data Cont
+  = Cont
+```
+
+#### `Msg`
+
+``` purescript
+type Msg = Unit
+```
+
+#### `ServerConfig`
+
+``` purescript
+data ServerConfig
+  = NewStyle
+  | OldStyle
+  | NestedRoutes
+```
+
 #### `serverName`
 
 ``` purescript
-serverName :: ServerName State Unit
+serverName :: RegistryName (ServerType Cont Stop Msg State)
 ```
 
 #### `startLink`
 
 ``` purescript
-startLink :: Boolean -> Effect StartLinkResult
+startLink :: ServerConfig -> Effect (StartLinkResult (ServerPid Cont Stop Msg State))
 ```
 
 #### `stopLink`
@@ -31,16 +60,28 @@ startLink :: Boolean -> Effect StartLinkResult
 stopLink :: Effect Unit
 ```
 
+#### `routes`
+
+``` purescript
+routes :: { "TestBarebones" :: StetsonHandler Unit { handler :: String, userData :: Maybe String }, "TestFullyLoaded" :: StetsonHandler Unit { handler :: String, userData :: Maybe String } }
+```
+
 #### `testStetsonConfig`
 
 ``` purescript
-testStetsonConfig :: Init State Unit
+testStetsonConfig :: InitFn Cont Stop Msg State
 ```
 
 #### `testStetsonConfig2`
 
 ``` purescript
-testStetsonConfig2 :: Init State Unit
+testStetsonConfig2 :: InitFn Cont Stop Msg State
+```
+
+#### `testStetsonConfigNested`
+
+``` purescript
+testStetsonConfigNested :: InitFn Cont Stop Msg State
 ```
 
 #### `bareBonesHandler`
@@ -82,7 +123,7 @@ cowboyRoutes :: List Path
 #### `jsonWriter`
 
 ``` purescript
-jsonWriter :: forall a. WriteForeign a => Tuple2 String (Req -> a -> (Effect (RestResult String a)))
+jsonWriter :: forall a. WriteForeign a => Tuple2 String (Req -> a -> (Effect (RestResult IOData a)))
 ```
 
 

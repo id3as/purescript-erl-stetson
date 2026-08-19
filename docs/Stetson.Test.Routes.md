@@ -32,4 +32,30 @@ apiRoute :: RouteDuplex' Route
 routeUrl :: Route -> String
 ```
 
+#### `NestedRoute`
+
+``` purescript
+data NestedRoute
+  = One Route
+  | Two Route
+```
+
+##### Instances
+``` purescript
+Generic NestedRoute _
+Show NestedRoute
+```
+
+#### `apiRoute'`
+
+``` purescript
+apiRoute' :: RouteDuplex' Route
+```
+
+#### `nestedApiRoute`
+
+``` purescript
+nestedApiRoute :: RouteDuplex' NestedRoute
+```
+
 

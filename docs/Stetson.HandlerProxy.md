@@ -9,7 +9,7 @@ self :: forall msg. Effect (Process msg)
 #### `ElidedInitResult`
 
 ``` purescript
-data ElidedInitResult :: Type
+data ElidedInitResult
 ```
 
 #### `restInitResult`
@@ -33,7 +33,7 @@ loopInitResult :: forall msg state. State msg state -> Req -> ElidedInitResult
 #### `State`
 
 ``` purescript
-type State msg state = { acceptHandlers :: List (Req -> state -> Effect (RestResult Boolean state)), handler :: StetsonHandlerCallbacks msg state, innerState :: state, provideHandlers :: List (Req -> state -> Effect (RestResult String state)) }
+type State msg state = { acceptHandlers :: List (Req -> state -> Effect (RestResult AcceptHandlerResult state)), handler :: StetsonHandlerCallbacks msg state, innerState :: state, provideHandlers :: List (Req -> state -> Effect (RestResult IOData state)) }
 ```
 
 #### `InitHandler`
@@ -45,7 +45,7 @@ type InitHandler c s = EffectFn2 Req c (InitResult s)
 #### `init`
 
 ``` purescript
-init :: forall msg state. EffectFn2 Req (StetsonHandlerCallbacks msg state) ElidedInitResult
+init :: forall msg state. EffectFn2 Req (State msg state) ElidedInitResult
 ```
 
 #### `terminate`
@@ -171,115 +171,109 @@ noCall :: forall t3 t4. Applicative t3 => t3 t4
 #### `accept`
 
 ``` purescript
-accept :: forall msg state. Int -> EffectFn2 Req (State msg state) (RestResult Boolean (State msg state))
+accept :: forall msg state. Int -> EffectFn2 Req (State msg state) (RestResult AcceptHandlerResult (State msg state))
 ```
 
 #### `provide`
 
 ``` purescript
-provide :: forall msg state. Int -> EffectFn2 Req (State msg state) (RestResult String (State msg state))
+provide :: forall msg state. Int -> EffectFn2 Req (State msg state) (RestResult IOData (State msg state))
 ```
 
 #### `accept_0`
 
 ``` purescript
-accept_0 :: forall msg state. EffectFn2 Req (State msg state) (RestResult Boolean (State msg state))
+accept_0 :: forall msg state. EffectFn2 Req (State msg state) (RestResult AcceptHandlerResult (State msg state))
 ```
 
 #### `accept_1`
 
 ``` purescript
-accept_1 :: forall msg state. EffectFn2 Req (State msg state) (RestResult Boolean (State msg state))
+accept_1 :: forall msg state. EffectFn2 Req (State msg state) (RestResult AcceptHandlerResult (State msg state))
 ```
 
 #### `accept_2`
 
 ``` purescript
-accept_2 :: forall msg state. EffectFn2 Req (State msg state) (RestResult Boolean (State msg state))
+accept_2 :: forall msg state. EffectFn2 Req (State msg state) (RestResult AcceptHandlerResult (State msg state))
 ```
 
 #### `accept_3`
 
 ``` purescript
-accept_3 :: forall msg state. EffectFn2 Req (State msg state) (RestResult Boolean (State msg state))
+accept_3 :: forall msg state. EffectFn2 Req (State msg state) (RestResult AcceptHandlerResult (State msg state))
 ```
 
 #### `accept_4`
 
 ``` purescript
-accept_4 :: forall msg state. EffectFn2 Req (State msg state) (RestResult Boolean (State msg state))
+accept_4 :: forall msg state. EffectFn2 Req (State msg state) (RestResult AcceptHandlerResult (State msg state))
 ```
 
 #### `accept_5`
 
 ``` purescript
-accept_5 :: forall msg state. EffectFn2 Req (State msg state) (RestResult Boolean (State msg state))
+accept_5 :: forall msg state. EffectFn2 Req (State msg state) (RestResult AcceptHandlerResult (State msg state))
 ```
 
 #### `accept_6`
 
 ``` purescript
-accept_6 :: forall msg state. EffectFn2 Req (State msg state) (RestResult Boolean (State msg state))
+accept_6 :: forall msg state. EffectFn2 Req (State msg state) (RestResult AcceptHandlerResult (State msg state))
 ```
 
 #### `provide_0`
 
 ``` purescript
-provide_0 :: forall msg state. EffectFn2 Req (State msg state) (RestResult String (State msg state))
+provide_0 :: forall msg state. EffectFn2 Req (State msg state) (RestResult IOData (State msg state))
 ```
 
 #### `provide_1`
 
 ``` purescript
-provide_1 :: forall msg state. EffectFn2 Req (State msg state) (RestResult String (State msg state))
+provide_1 :: forall msg state. EffectFn2 Req (State msg state) (RestResult IOData (State msg state))
 ```
 
 #### `provide_2`
 
 ``` purescript
-provide_2 :: forall msg state. EffectFn2 Req (State msg state) (RestResult String (State msg state))
+provide_2 :: forall msg state. EffectFn2 Req (State msg state) (RestResult IOData (State msg state))
 ```
 
 #### `provide_3`
 
 ``` purescript
-provide_3 :: forall msg state. EffectFn2 Req (State msg state) (RestResult String (State msg state))
+provide_3 :: forall msg state. EffectFn2 Req (State msg state) (RestResult IOData (State msg state))
 ```
 
 #### `provide_4`
 
 ``` purescript
-provide_4 :: forall msg state. EffectFn2 Req (State msg state) (RestResult String (State msg state))
+provide_4 :: forall msg state. EffectFn2 Req (State msg state) (RestResult IOData (State msg state))
 ```
 
 #### `provide_5`
 
 ``` purescript
-provide_5 :: forall msg state. EffectFn2 Req (State msg state) (RestResult String (State msg state))
+provide_5 :: forall msg state. EffectFn2 Req (State msg state) (RestResult IOData (State msg state))
 ```
 
 #### `provide_6`
 
 ``` purescript
-provide_6 :: forall msg state. EffectFn2 Req (State msg state) (RestResult String (State msg state))
+provide_6 :: forall msg state. EffectFn2 Req (State msg state) (RestResult IOData (State msg state))
 ```
 
 #### `wsState`
 
 ``` purescript
-wsState :: forall msg. Effect (WebSocketInternalState msg)
+wsState :: forall msg. Effect (Process msg)
 ```
 
 #### `websocket_init`
 
 ``` purescript
 websocket_init :: forall msg state. WSInitHandler (State msg state)
-```
-
-#### `router`
-
-``` purescript
-router :: forall msg. Pid -> msg -> Effect Unit
 ```
 
 #### `websocket_handle`
@@ -303,7 +297,7 @@ transformWsResult :: forall msg state. State msg state -> WebSocketCallResult st
 #### `loopState`
 
 ``` purescript
-loopState :: forall msg. Effect (LoopInternalState msg)
+loopState :: forall msg. Effect (Process msg)
 ```
 
 #### `info`

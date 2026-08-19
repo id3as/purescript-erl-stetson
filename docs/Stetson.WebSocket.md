@@ -24,12 +24,6 @@ handle :: forall msg state. WebSocketHandleHandler msg state -> StetsonHandler m
 info :: forall msg state. WebSocketInfoHandler msg state -> StetsonHandler msg state -> StetsonHandler msg state
 ```
 
-#### `self`
-
-``` purescript
-self :: forall msg. StateT (Process msg) Effect (Process msg)
-```
-
 #### `initResult`
 
 ``` purescript
@@ -45,11 +39,19 @@ terminate :: forall msg state. (Foreign -> Req -> state -> Effect Unit) -> Stets
 Add a terminate callback to the provided StetsonHandler
 
 
-### Re-exported from Control.Monad.Trans.Class:
+### Re-exported from Effect.Class:
 
-#### `lift`
+#### `liftEffect`
 
 ``` purescript
-lift :: forall t m a. MonadTrans t => Monad m => m a -> t m a
+liftEffect :: forall m a. MonadEffect m => Effect a -> m a
+```
+
+### Re-exported from Erl.Process:
+
+#### `self`
+
+``` purescript
+self :: forall x a. HasSelf x a => x (Process a)
 ```
 
